@@ -65,7 +65,7 @@ export const login = async (
 ): Promise<void> => {
   try {
     const validatedData = loginSchema.parse(req.body);
-    const { email, password } = validatedData;
+    const { email, password, rememberMe } = validatedData;
 
     const user = await User.findOne({ email });
 
@@ -93,12 +93,15 @@ export const login = async (
     const tokenPayload = {
       id: user._id,
       role: user.role,
+      rememberMe: !!rememberMe,
     };
 
     const accessToken = generateAccessToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
+    const refreshTokenDuration = rememberMe ? "30d" : "7d";
+    const refreshToken = generateRefreshToken(tokenPayload, refreshTokenDuration);
 
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const expiresDays = rememberMe ? 30 : 7;
+    const expiresAt = new Date(Date.now() + expiresDays * 24 * 60 * 60 * 1000); // 7 or 30 days
     await Token.findOneAndUpdate(
       { userId: user._id },
       { accessToken, refreshToken, expiresAt },
@@ -119,7 +122,7 @@ export const login = async (
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: expiresDays * 24 * 60 * 60 * 1000, // 7 or 30 days
       sameSite: "strict",
     });
 
@@ -185,12 +188,15 @@ export const refresh = async (
     const tokenPayload = {
       id: user._id,
       role: user.role,
+      rememberMe: decoded.rememberMe || false,
     };
 
     const newAccessToken = generateAccessToken(tokenPayload);
-    const newRefreshToken = generateRefreshToken(tokenPayload);
+    const refreshTokenDuration = decoded.rememberMe ? "30d" : "7d";
+    const newRefreshToken = generateRefreshToken(tokenPayload, refreshTokenDuration);
 
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const expiresDays = decoded.rememberMe ? 30 : 7;
+    const expiresAt = new Date(Date.now() + expiresDays * 24 * 60 * 60 * 1000); // 7 or 30 days
     await Token.findOneAndUpdate(
       { userId: user._id },
       { accessToken: newAccessToken, refreshToken: newRefreshToken, expiresAt },
@@ -211,7 +217,7 @@ export const refresh = async (
     res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: expiresDays * 24 * 60 * 60 * 1000, // 7 or 30 days
       sameSite: "strict",
     });
 

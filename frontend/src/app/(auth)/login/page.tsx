@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +28,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const data = await authApi.login({ email, password });
+      const data = await authApi.login({ email, password, rememberMe });
       if (data.token) {
         localStorage.setItem("token", data.token);
         if (data.user) {
@@ -117,7 +118,12 @@ export default function LoginPage() {
           {/* Options */}
           <div className="flex items-center justify-between text-xs text-zinc-500">
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" className="accent-indigo-500" />
+              <input 
+                type="checkbox" 
+                className="accent-indigo-500"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
               Remember me
             </label>
 

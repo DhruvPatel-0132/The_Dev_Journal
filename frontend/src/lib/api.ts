@@ -33,6 +33,7 @@ export const authApi = {
   login: async (data: {
     email: string;
     password: string;
+    rememberMe?: boolean;
   }) => {
     const res = await fetch(
       `${API_URL}/auth/login`,
