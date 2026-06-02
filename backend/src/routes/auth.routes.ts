@@ -3,7 +3,9 @@ import {
   login,
   register,
   refresh,
-  logout
+  logout,
+  googleAuth,
+  completeGoogleAuth
 } from "../controllers/auth.controller";
 import { protectRoute } from "../middlewares/auth.middleware";
 
@@ -13,6 +15,8 @@ router.post("/register", register);
 router.post("/login", login);
 router.post("/refresh", refresh);
 router.post("/logout", logout);
+router.post("/google", googleAuth);
+router.post("/google/complete", completeGoogleAuth);
 
 // Example protected route
 router.get("/me", protectRoute, (req, res) => {

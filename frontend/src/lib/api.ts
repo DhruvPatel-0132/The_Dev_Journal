@@ -55,4 +55,26 @@ export const authApi = {
 
     return result;
   },
+
+  googleAuth: async (credential: string) => {
+    const res = await fetch(`${API_URL}/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential }),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+
+  completeGoogleAuth: async (credential: string, role: string) => {
+    const res = await fetch(`${API_URL}/auth/google/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential, role }),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
 };

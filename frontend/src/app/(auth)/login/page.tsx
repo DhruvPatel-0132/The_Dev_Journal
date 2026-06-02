@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Mail, Lock, ArrowRight, AlertCircle } from "lucide-react";
 import AuthCard from "../_components/AuthCard";
-import GoogleIcon from "@/components/icons/GoogleIcon";
 import { authApi } from "@/lib/api";
+import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,6 +45,32 @@ export default function LoginPage() {
     }
   };
 
+  const handleGoogleLogin = async (response: CredentialResponse) => {
+    if (!response.credential) return;
+    setLoading(true);
+    setError("");
+
+    try {
+      const data = await authApi.googleAuth(response.credential);
+      if (data.existingUser) {
+        localStorage.setItem("token", data.token);
+        if (data.user) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+        }
+        router.push(data.redirect || "/");
+      } else {
+        // New user, store temp data and go to select-role
+        sessionStorage.setItem("googleCredential", response.credential);
+        sessionStorage.setItem("googleUser", JSON.stringify(data.user));
+        router.push("/select-role");
+      }
+    } catch (err: any) {
+      setError(err.message || "Google authentication failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AuthCard>
       <motion.div
@@ -62,7 +88,7 @@ export default function LoginPage() {
             ← Back to home
           </Link>
         </div>
-        
+
         {/* Header */}
         <div className="space-y-2 text-center">
           <div className="inline-flex px-3 py-1 text-xs rounded-full bg-white/5 border border-white/10 text-zinc-400">
@@ -118,8 +144,8 @@ export default function LoginPage() {
           {/* Options */}
           <div className="flex items-center justify-between text-xs text-zinc-500">
             <label className="flex items-center gap-2 cursor-pointer">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 className="accent-indigo-500"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
@@ -160,16 +186,17 @@ export default function LoginPage() {
         </div>
 
         {/* Google Login */}
-        <motion.button
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.98 }}
-          type="button"
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl 
-          bg-white text-black font-medium text-sm hover:bg-zinc-200 transition"
-        >
-          <GoogleIcon />
-          Continue with Google
-        </motion.button>
+        <div className="flex justify-center w-full [&>div]:w-full [&>div>div]:w-full">
+          <GoogleLogin
+            onSuccess={handleGoogleLogin}
+            onError={() => setError("Google Login Failed")}
+            theme="filled_black"
+            size="large"
+            shape="rectangular"
+            text="continue_with"
+            width="100%"
+          />
+        </div>
 
         {/* Footer */}
         <p className="text-center text-sm text-zinc-500">
