@@ -12,7 +12,7 @@ export default function Navbar() {
   const handleExploreClick = () => {
     const token = localStorage.getItem("token");
     if (token) {
-      router.push("/blogs");
+      router.push("/blog");
     } else {
       router.push("/login");
     }
