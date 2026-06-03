@@ -11,11 +11,14 @@ const startServer = async () => {
   try {
     await connectDB();
 
+    console.log(`\n=================================`);
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`=================================\n`);
+
     app.listen(PORT, () => {
       console.log(`
 🚀 Server Running
 🌐 Port: ${PORT}
-📦 Environment: ${process.env.NODE_ENV}
       `);
     });
   } catch (error) {

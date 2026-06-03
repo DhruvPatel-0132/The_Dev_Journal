@@ -17,6 +17,7 @@ export const authApi = {
           "Content-Type":
             "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(data),
       }
     );
@@ -43,6 +44,7 @@ export const authApi = {
           "Content-Type":
             "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(data),
       }
     );
@@ -60,6 +62,7 @@ export const authApi = {
     const res = await fetch(`${API_URL}/auth/google`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ credential }),
     });
     const result = await res.json();
@@ -71,6 +74,7 @@ export const authApi = {
     const res = await fetch(`${API_URL}/auth/google/complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ credential, role }),
     });
     const result = await res.json();
@@ -82,6 +86,7 @@ export const authApi = {
     const res = await fetch(`${API_URL}/auth/forgot-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ email }),
     });
     const result = await res.json();
@@ -93,6 +98,7 @@ export const authApi = {
     const res = await fetch(`${API_URL}/auth/reset-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ token, password }),
     });
     const result = await res.json();
