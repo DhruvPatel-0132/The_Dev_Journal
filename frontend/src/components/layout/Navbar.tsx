@@ -14,11 +14,13 @@ export default function Navbar() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <Logo />
+          <Link href="/">
+            <Logo />
+          </Link>
         </motion.div>
 
         <div className="flex items-center gap-3">
-          <Link href="/articles">
+          <Link href="/blogs">
             <button className="cursor-pointer h-10 sm:h-11 px-4 sm:px-6 rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-xl text-sm hover:border-indigo-500/40 hover:bg-indigo-500/10 transition-all duration-300">
               Explore
             </button>

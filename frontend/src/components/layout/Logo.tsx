@@ -1,11 +1,16 @@
-import { Terminal } from "lucide-react";
+import Image from "next/image";
 
 export default function Logo() {
   return (
     <div className="flex items-center gap-4">
-      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center shadow-[0_0_40px_rgba(99,102,241,0.45)]">
-        <Terminal className="w-5 h-5 text-white" />
-      </div>
+      <Image
+        src="/Logo.png"
+        alt="The Dev Journal Logo"
+        width={48}
+        height={48}
+        className="object-contain rounded-lg"
+        priority
+      />
 
       <div>
         <h1 className="text-lg font-bold tracking-tight">
