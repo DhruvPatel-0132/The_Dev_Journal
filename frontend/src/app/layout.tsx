@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "The Dev Journal",
   description: "Engineering Blog Platform",
+  icons: {
+    icon: "/Icon.png"
+  }
 };
 
 export default function RootLayout({

@@ -4,10 +4,12 @@ import crypto from "crypto";
 import { OAuth2Client } from "google-auth-library";
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../services/jwt.service";
 
-import { registerSchema, loginSchema } from "../validators/auth.validator";
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "../validators/auth.validator";
 import { z } from "zod";
 import User from "../models/User";
 import Token from "../models/Token";
+import ForgotPasswordToken from "../models/ForgotPasswordToken";
+import { sendPasswordResetEmail } from "../services/mail.service";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -454,5 +456,77 @@ export const completeGoogleAuth = async (
   } catch (error) {
     console.error("Complete Google Auth Error:", error);
     res.status(500).json({ success: false, message: "Account completion failed" });
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = forgotPasswordSchema.parse(req.body);
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Return success even if user doesn't exist for security reasons
+      res.status(200).json({ success: true, message: "If that email is in our database, we will send a password reset link to it." });
+      return;
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await ForgotPasswordToken.findOneAndUpdate(
+      { userId: user._id },
+      { token, expiresAt },
+      { upsert: true, new: true }
+    );
+
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+    await sendPasswordResetEmail(user.email, resetLink);
+
+    res.status(200).json({ success: true, message: "If that email is in our database, we will send a password reset link to it." });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ success: false, message: "Validation failed", issues: error.issues });
+      return;
+    }
+    console.error("Forgot Password Error:", error);
+    res.status(500).json({ success: false, message: "Failed to process forgot password request" });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token, password } = resetPasswordSchema.parse(req.body);
+
+    const resetToken = await ForgotPasswordToken.findOne({ token });
+
+    if (!resetToken || resetToken.expiresAt < new Date()) {
+      res.status(400).json({ success: false, message: "Invalid or expired password reset token" });
+      return;
+    }
+
+    const user = await User.findById(resetToken.userId);
+    if (!user) {
+      res.status(400).json({ success: false, message: "Invalid token" });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+    user.password = hashedPassword;
+    await user.save();
+
+    await ForgotPasswordToken.deleteOne({ _id: resetToken._id });
+
+    // Optional: Log user out of all devices by clearing refresh tokens
+    await Token.deleteMany({ userId: user._id });
+
+    res.status(200).json({ success: true, message: "Password has been successfully reset" });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ success: false, message: "Validation failed", issues: error.issues });
+      return;
+    }
+    console.error("Reset Password Error:", error);
+    res.status(500).json({ success: false, message: "Failed to reset password" });
   }
 };
