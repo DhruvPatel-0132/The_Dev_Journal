@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, ChevronLeft, ChevronRight, Calendar, ArrowRight } from "lucide-react";
 import BackgroundGlow from "@/components/common/BackgroundGlow";
 import GridPattern from "@/components/common/GridPattern";
-import Navbar from "@/components/layout/Navbar";
+import BlogNavbar from "@/components/layout/BlogNavbar";
 import Link from "next/link";
 
 // Mock Data
@@ -53,7 +53,7 @@ export default function BlogsPage() {
         <GridPattern />
       </div>
 
-      <Navbar />
+      <BlogNavbar />
 
       <section className="relative z-10 min-h-screen pt-32 pb-20 px-5 sm:px-8 xl:px-10 max-w-[1440px] mx-auto w-full">
         {/* Header & Search */}

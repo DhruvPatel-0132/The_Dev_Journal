@@ -99,4 +99,15 @@ export const authApi = {
     if (!res.ok) throw new Error(result.message);
     return result;
   },
+
+  logout: async () => {
+    const res = await fetch(`${API_URL}/auth/logout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include", // Required to send cookies
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
 };

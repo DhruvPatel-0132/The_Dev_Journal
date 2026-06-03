@@ -10,11 +10,7 @@ interface SendMailOptions {
   html: string;
 }
 
-let transporter: nodemailer.Transporter | null = null;
-
-const getTransporter = async () => {
-  if (transporter) return transporter;
-
+const createTransporter = async () => {
   const oauth2Client = new google.auth.OAuth2(
     process.env.CLIENT_ID,
     process.env.CLIENT_SECRET,
@@ -25,10 +21,15 @@ const getTransporter = async () => {
     refresh_token: process.env.REFRESH_TOKEN,
   });
 
+  // Always fetch a fresh access token so it never goes stale
   const accessTokenObj = await oauth2Client.getAccessToken();
-  const accessToken = accessTokenObj?.token || accessTokenObj;
+  const accessToken = accessTokenObj?.token;
 
-  transporter = nodemailer.createTransport({
+  if (!accessToken) {
+    throw new Error("Failed to obtain OAuth2 access token for email service");
+  }
+
+  return nodemailer.createTransport({
     service: "gmail",
     auth: {
       type: "OAuth2",
@@ -36,18 +37,16 @@ const getTransporter = async () => {
       clientId: process.env.CLIENT_ID,
       clientSecret: process.env.CLIENT_SECRET,
       refreshToken: process.env.REFRESH_TOKEN,
-      accessToken: accessToken as string,
+      accessToken,
     },
   });
-
-  return transporter;
 };
 
 export const sendMail = async ({ to, subject, html }: SendMailOptions) => {
   try {
-    const mailTransporter = await getTransporter();
+    const mailTransporter = await createTransporter();
     const info = await mailTransporter.sendMail({
-      from: `"${process.env.FROM_NAME || 'The Dev Journal'}" <${process.env.FROM_EMAIL || process.env.SENDER_EMAIL}>`,
+      from: `"${process.env.FROM_NAME || "The Dev Journal"}" <${process.env.FROM_EMAIL || process.env.SENDER_EMAIL}>`,
       to,
       subject,
       html,

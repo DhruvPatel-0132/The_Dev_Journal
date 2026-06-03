@@ -164,7 +164,7 @@ function ResetPasswordForm() {
 
         <button
           type="submit"
-          disabled={loading || !!success}
+          disabled={loading}
           className="
             group
             relative
