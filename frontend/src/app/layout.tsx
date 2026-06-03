@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,20 +15,26 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "The Dev Journal",
-  description: "",
+  description: "Engineering Blog Platform",
+  icons: {
+    icon: "/Icon.png"
+  }
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className="min-h-screen bg-[#070709] text-white">
+        <GoogleOAuthProvider
+          clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}
+        >
+          {children}
+        </GoogleOAuthProvider>
+      </body>
     </html>
   );
 }

@@ -33,6 +33,7 @@ export const authApi = {
   login: async (data: {
     email: string;
     password: string;
+    rememberMe?: boolean;
   }) => {
     const res = await fetch(
       `${API_URL}/auth/login`,
@@ -52,6 +53,50 @@ export const authApi = {
       throw new Error(result.message);
     }
 
+    return result;
+  },
+
+  googleAuth: async (credential: string) => {
+    const res = await fetch(`${API_URL}/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential }),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+
+  completeGoogleAuth: async (credential: string, role: string) => {
+    const res = await fetch(`${API_URL}/auth/google/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential, role }),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+
+  forgotPassword: async (email: string) => {
+    const res = await fetch(`${API_URL}/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+
+  resetPassword: async (token: string, password: string) => {
+    const res = await fetch(`${API_URL}/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, password }),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
     return result;
   },
 };

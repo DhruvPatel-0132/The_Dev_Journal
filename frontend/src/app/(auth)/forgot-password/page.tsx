@@ -1,8 +1,39 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { Mail, ArrowLeft, ShieldCheck } from "lucide-react";
+import { Mail, ArrowLeft, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
 import AuthCard from "../_components/AuthCard";
+import { authApi } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setError("Please enter your email address.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const data = await authApi.forgotPassword(email);
+      setSuccess(data.message || "Reset link sent successfully");
+      setEmail("");
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AuthCard>
       <div className="w-full max-w-md mx-auto">
@@ -31,8 +62,22 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
 
+        {error && (
+          <div className="mt-6 flex items-center gap-2 p-3 text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <p>{error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="mt-6 flex items-center gap-2 p-3 text-sm text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 rounded-xl">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <p>{success}</p>
+          </div>
+        )}
+
         {/* Form */}
-        <form className="mt-8 space-y-5">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           <div>
             <label
               htmlFor="email"
@@ -41,12 +86,14 @@ export default function ForgotPasswordPage() {
               Email Address
             </label>
 
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
+            <div className="relative group">
+              <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500 group-focus-within:text-indigo-400 transition" />
 
               <input
                 id="email"
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
                 className="
@@ -68,6 +115,7 @@ export default function ForgotPasswordPage() {
 
           <button
             type="submit"
+            disabled={loading || !!success}
             className="
               group
               relative
@@ -85,10 +133,12 @@ export default function ForgotPasswordPage() {
               hover:shadow-xl
               hover:shadow-indigo-500/20
               active:scale-[0.99]
+              disabled:opacity-50
+              disabled:pointer-events-none
             "
           >
-            <span className="relative z-10">
-              Send Reset Link
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              {loading ? "Sending..." : "Send Reset Link"}
             </span>
 
             <div className="absolute inset-0 bg-white/10 opacity-0 transition-opacity group-hover:opacity-100" />
@@ -98,7 +148,7 @@ export default function ForgotPasswordPage() {
         {/* Security Note */}
         <div className="mt-6 rounded-xl border border-emerald-500/10 bg-emerald-500/5 p-4">
           <div className="flex items-start gap-3">
-            <ShieldCheck className="h-5 w-5 text-emerald-400 mt-0.5" />
+            <ShieldCheck className="h-5 w-5 text-emerald-400 mt-0.5 shrink-0" />
 
             <div>
               <p className="text-sm font-medium text-emerald-300">

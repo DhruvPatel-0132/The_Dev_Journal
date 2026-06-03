@@ -1,11 +1,17 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import { OAuth2Client } from "google-auth-library";
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../services/jwt.service";
 
-import { registerSchema, loginSchema } from "../validators/auth.validator";
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "../validators/auth.validator";
 import { z } from "zod";
 import User from "../models/User";
 import Token from "../models/Token";
+import ForgotPasswordToken from "../models/ForgotPasswordToken";
+import { sendPasswordResetEmail } from "../services/mail.service";
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const register = async (
   req: Request,
@@ -65,7 +71,7 @@ export const login = async (
 ): Promise<void> => {
   try {
     const validatedData = loginSchema.parse(req.body);
-    const { email, password } = validatedData;
+    const { email, password, rememberMe } = validatedData;
 
     const user = await User.findOne({ email });
 
@@ -93,12 +99,15 @@ export const login = async (
     const tokenPayload = {
       id: user._id,
       role: user.role,
+      rememberMe: !!rememberMe,
     };
 
     const accessToken = generateAccessToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
+    const refreshTokenDuration = rememberMe ? "30d" : "7d";
+    const refreshToken = generateRefreshToken(tokenPayload, refreshTokenDuration);
 
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const expiresDays = rememberMe ? 30 : 7;
+    const expiresAt = new Date(Date.now() + expiresDays * 24 * 60 * 60 * 1000); // 7 or 30 days
     await Token.findOneAndUpdate(
       { userId: user._id },
       { accessToken, refreshToken, expiresAt },
@@ -119,7 +128,7 @@ export const login = async (
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: expiresDays * 24 * 60 * 60 * 1000, // 7 or 30 days
       sameSite: "strict",
     });
 
@@ -185,12 +194,15 @@ export const refresh = async (
     const tokenPayload = {
       id: user._id,
       role: user.role,
+      rememberMe: decoded.rememberMe || false,
     };
 
     const newAccessToken = generateAccessToken(tokenPayload);
-    const newRefreshToken = generateRefreshToken(tokenPayload);
+    const refreshTokenDuration = decoded.rememberMe ? "30d" : "7d";
+    const newRefreshToken = generateRefreshToken(tokenPayload, refreshTokenDuration);
 
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const expiresDays = decoded.rememberMe ? 30 : 7;
+    const expiresAt = new Date(Date.now() + expiresDays * 24 * 60 * 60 * 1000); // 7 or 30 days
     await Token.findOneAndUpdate(
       { userId: user._id },
       { accessToken: newAccessToken, refreshToken: newRefreshToken, expiresAt },
@@ -211,7 +223,7 @@ export const refresh = async (
     res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: expiresDays * 24 * 60 * 60 * 1000, // 7 or 30 days
       sameSite: "strict",
     });
 
@@ -242,4 +254,279 @@ export const logout = async (
   });
 
   res.status(200).json({ success: true, message: "Logged out successfully" });
+};
+
+export const googleAuth = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { credential } = req.body;
+    if (!credential) {
+      res.status(400).json({ success: false, message: "Missing credential" });
+      return;
+    }
+
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload) {
+      res.status(400).json({ success: false, message: "Invalid token payload" });
+      return;
+    }
+
+    const { email, name, picture } = payload;
+    if (!email || !name) {
+      res.status(400).json({ success: false, message: "Missing email or name from Google" });
+      return;
+    }
+
+    const user = await User.findOne({ email });
+
+    if (user) {
+      // User exists, login
+      const tokenPayload = {
+        id: user._id,
+        role: user.role,
+        rememberMe: true,
+      };
+
+      const accessToken = generateAccessToken(tokenPayload);
+      const refreshToken = generateRefreshToken(tokenPayload, "30d");
+
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+      await Token.findOneAndUpdate(
+        { userId: user._id },
+        { accessToken, refreshToken, expiresAt },
+        { upsert: true, new: true }
+      );
+
+      user.accessToken = accessToken;
+      user.refreshToken = refreshToken;
+      // Update avatar if provided and user doesn't have one
+      if (!user.avatar && picture) {
+        user.avatar = picture;
+      }
+      await user.save();
+
+      res.cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 15 * 60 * 1000, // 15 minutes
+        sameSite: "strict",
+      });
+
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        sameSite: "strict",
+      });
+
+      const redirect = user.role === "creator" ? "/dashboard" : "/blogs";
+
+      res.status(200).json({
+        success: true,
+        existingUser: true,
+        token: accessToken,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          avatar: user.avatar,
+        },
+        redirect,
+      });
+      return;
+    }
+
+    // New user, send back data
+    res.status(200).json({
+      success: true,
+      existingUser: false,
+      user: {
+        email,
+        name,
+        avatar: picture,
+      },
+      credential, // Return it so frontend can pass it to /complete
+    });
+  } catch (error) {
+    console.error("Google Auth Error:", error);
+    res.status(500).json({ success: false, message: "Google Authentication failed" });
+  }
+};
+
+export const completeGoogleAuth = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { credential, role } = req.body;
+    if (!credential || !role) {
+      res.status(400).json({ success: false, message: "Missing required fields" });
+      return;
+    }
+
+    if (role !== "visitor" && role !== "creator") {
+      res.status(400).json({ success: false, message: "Invalid role" });
+      return;
+    }
+
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email || !payload.name) {
+      res.status(400).json({ success: false, message: "Invalid Google token" });
+      return;
+    }
+
+    const { email, name, picture } = payload;
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      res.status(400).json({ success: false, message: "User already exists" });
+      return;
+    }
+
+    const randomPassword = crypto.randomBytes(16).toString("hex");
+    const hashedPassword = await bcrypt.hash(randomPassword, 12);
+
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role,
+      avatar: picture,
+    });
+
+    const tokenPayload = {
+      id: user._id,
+      role: user.role,
+      rememberMe: true,
+    };
+
+    const accessToken = generateAccessToken(tokenPayload);
+    const refreshToken = generateRefreshToken(tokenPayload, "30d");
+
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await Token.findOneAndUpdate(
+      { userId: user._id },
+      { accessToken, refreshToken, expiresAt },
+      { upsert: true, new: true }
+    );
+
+    user.accessToken = accessToken;
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 15 * 60 * 1000,
+      sameSite: "strict",
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      sameSite: "strict",
+    });
+
+    const redirect = user.role === "creator" ? "/dashboard" : "/blogs";
+
+    res.status(201).json({
+      success: true,
+      token: accessToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+      },
+      redirect,
+    });
+  } catch (error) {
+    console.error("Complete Google Auth Error:", error);
+    res.status(500).json({ success: false, message: "Account completion failed" });
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = forgotPasswordSchema.parse(req.body);
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Return success even if user doesn't exist for security reasons
+      res.status(200).json({ success: true, message: "If that email is in our database, we will send a password reset link to it." });
+      return;
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await ForgotPasswordToken.findOneAndUpdate(
+      { userId: user._id },
+      { token, expiresAt },
+      { upsert: true, new: true }
+    );
+
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+    await sendPasswordResetEmail(user.email, resetLink);
+
+    res.status(200).json({ success: true, message: "If that email is in our database, we will send a password reset link to it." });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ success: false, message: "Validation failed", issues: error.issues });
+      return;
+    }
+    console.error("Forgot Password Error:", error);
+    res.status(500).json({ success: false, message: "Failed to process forgot password request" });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token, password } = resetPasswordSchema.parse(req.body);
+
+    const resetToken = await ForgotPasswordToken.findOne({ token });
+
+    if (!resetToken || resetToken.expiresAt < new Date()) {
+      res.status(400).json({ success: false, message: "Invalid or expired password reset token" });
+      return;
+    }
+
+    const user = await User.findById(resetToken.userId);
+    if (!user) {
+      res.status(400).json({ success: false, message: "Invalid token" });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+    user.password = hashedPassword;
+    await user.save();
+
+    await ForgotPasswordToken.deleteOne({ _id: resetToken._id });
+
+    // Optional: Log user out of all devices by clearing refresh tokens
+    await Token.deleteMany({ userId: user._id });
+
+    res.status(200).json({ success: true, message: "Password has been successfully reset" });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ success: false, message: "Validation failed", issues: error.issues });
+      return;
+    }
+    console.error("Reset Password Error:", error);
+    res.status(500).json({ success: false, message: "Failed to reset password" });
+  }
 };
