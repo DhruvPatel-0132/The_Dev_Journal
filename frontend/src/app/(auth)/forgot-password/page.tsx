@@ -115,7 +115,7 @@ export default function ForgotPasswordPage() {
 
           <button
             type="submit"
-            disabled={loading || !!success}
+            disabled={loading}
             className="
               group
               relative
@@ -146,7 +146,7 @@ export default function ForgotPasswordPage() {
         </form>
 
         {/* Security Note */}
-        <div className="mt-6 rounded-xl border border-emerald-500/10 bg-emerald-500/5 p-4">
+        {/* <div className="mt-6 rounded-xl border border-emerald-500/10 bg-emerald-500/5 p-4">
           <div className="flex items-start gap-3">
             <ShieldCheck className="h-5 w-5 text-emerald-400 mt-0.5 shrink-0" />
 
@@ -161,7 +161,7 @@ export default function ForgotPasswordPage() {
               </p>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Footer */}
         <div className="mt-8 text-center">

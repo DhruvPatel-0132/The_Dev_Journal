@@ -25,4 +25,10 @@ const ForgotPasswordTokenSchema = new Schema<IForgotPasswordToken>(
   { timestamps: true }
 );
 
+// Auto-delete expired tokens from MongoDB
+ForgotPasswordTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+// One active reset token per user at a time
+ForgotPasswordTokenSchema.index({ userId: 1 }, { unique: true });
+
 export default mongoose.model<IForgotPasswordToken>("ForgotPasswordToken", ForgotPasswordTokenSchema);
