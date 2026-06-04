@@ -156,4 +156,44 @@ export const authApi = {
     // Return result regardless so caller can read unverified flag
     return { ...result, ok: res.ok, status: res.status };
   },
+
+  refresh: async () => {
+    const res = await fetch(`${API_URL}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+};
+
+export const verifyAndRefreshToken = async () => {
+  let token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  if (!token || token === "undefined" || token === "null") return null;
+  
+  token = token.replace(/^"|"$/g, '');
+  
+  try {
+    const { jwtDecode } = await import("jwt-decode");
+    const decoded: any = jwtDecode(token);
+    
+    // Check if token is expired or about to expire in the next 10 seconds
+    const currentTime = Date.now() / 1000;
+    if (decoded.exp && decoded.exp < currentTime + 10) {
+      // Token expired, refresh it
+      const data = await authApi.refresh();
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        return data.token;
+      }
+      return null;
+    }
+    
+    return token;
+  } catch (error) {
+    console.error("Token verification failed", error);
+    return null;
+  }
 };

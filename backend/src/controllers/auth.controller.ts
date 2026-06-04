@@ -98,7 +98,7 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
       sameSite: "strict",
     });
 
-    res.status(200).json({ success: true, message: "Token refreshed successfully" });
+    res.status(200).json({ success: true, message: "Token refreshed successfully", token: result.accessToken });
   } catch (error) {
     handleError(res, error, "Refresh failed");
   }
@@ -151,6 +151,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
 
     res.status(200).json({
       success: true,
+      token: result.accessToken,
       ...result,
     });
   } catch (error) {

@@ -5,40 +5,45 @@ import { ArrowRight, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { jwtDecode } from "jwt-decode";
+import { verifyAndRefreshToken } from "@/lib/api";
 
 export default function HeroActions() {
   const router = useRouter();
   const [showToast, setShowToast] = useState(false);
 
-  const handleDiscoverContent = () => {
-    const token = localStorage.getItem("token");
+  const handleDiscoverContent = async () => {
+    const token = await verifyAndRefreshToken();
 
     if (!token) {
       router.push("/login");
       return;
     }
 
+    let decoded: any;
     try {
-      const decoded: any = jwtDecode(token);
+      decoded = jwtDecode(token);
+    } catch (err) {
+      console.error("Token decode error:", err);
+      localStorage.removeItem("token");
+      router.push("/login");
+      return;
+    }
 
-      switch (decoded.role) {
-        case "creator":
-          router.push("/dashboard");
-          break;
-
-        case "visitor":
-          router.push("/blog");
-          break;
-      }
-    } catch {
+    const role = decoded?.role?.toLowerCase();
+    if (role === "creator") {
+      router.push("/dashboard");
+    } else if (role === "visitor") {
+      router.push("/blog");
+    } else {
       router.push("/login");
     }
   };
 
-  const handleStartWriting = () => {
-    // Read user from localStorage
-    const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const handleStartWriting = async () => {
+    const token = await verifyAndRefreshToken();
+    let userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+
+    if (userStr === "undefined" || userStr === "null") userStr = null;
 
     if (!token || !userStr) {
       // Not logged in → redirect to login
@@ -46,16 +51,20 @@ export default function HeroActions() {
       return;
     }
 
+    let user;
     try {
-      const user = JSON.parse(userStr);
-      if (user?.role === "visitor") {
-        // Visitor role → show toast, block navigation
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3500);
-        return;
-      }
-    } catch {
+      user = JSON.parse(userStr);
+    } catch (err) {
+      console.error("User parse error:", err);
+      localStorage.removeItem("user");
       router.push("/login");
+      return;
+    }
+
+    if (user?.role?.toLowerCase() === "visitor") {
+      // Visitor role → show toast, block navigation
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3500);
       return;
     }
 

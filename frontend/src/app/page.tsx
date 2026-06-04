@@ -3,8 +3,8 @@
 import BackgroundGlow from "@/components/common/BackgroundGlow";
 import GridPattern from "@/components/common/GridPattern";
 import Navbar from "@/components/layout/Navbar";
-import Hero from "@/features/Home/components/Hero";
-import CodePreview from "@/features/Home/components/CodePreview";
+import Hero from "@/components/home/Hero";
+import CodePreview from "@/components/home/CodePreview";
 
 export default function HomePage() {
   return (
