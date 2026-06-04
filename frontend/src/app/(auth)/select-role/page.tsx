@@ -81,9 +81,9 @@ export default function SelectRolePage() {
 
         {/* User Info from Google */}
         <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
-          <img 
-            src={googleData.user.avatar} 
-            alt={googleData.user.name} 
+          <img
+            src={googleData.user.avatar}
+            alt={googleData.user.name}
             className="w-12 h-12 rounded-full border border-white/20 object-cover"
             referrerPolicy="no-referrer"
           />
@@ -101,17 +101,16 @@ export default function SelectRolePage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          
+
           {/* Role Selection Options */}
           <div className="grid grid-cols-1 gap-3">
             {/* Visitor Option */}
-            <div 
+            <div
               onClick={() => setRole("visitor")}
-              className={`relative cursor-pointer p-4 rounded-xl border transition-all duration-200 ${
-                role === "visitor" 
-                  ? "bg-indigo-500/10 border-indigo-500/50" 
+              className={`relative cursor-pointer p-4 rounded-xl border transition-all duration-200 ${role === "visitor"
+                  ? "bg-indigo-500/10 border-indigo-500/50"
                   : "bg-white/5 border-white/10 hover:border-white/20"
-              }`}
+                }`}
             >
               {role === "visitor" && (
                 <CheckCircle2 className="absolute top-4 right-4 w-5 h-5 text-indigo-400" />
@@ -123,13 +122,12 @@ export default function SelectRolePage() {
             </div>
 
             {/* Creator Option */}
-            <div 
+            <div
               onClick={() => setRole("creator")}
-              className={`relative cursor-pointer p-4 rounded-xl border transition-all duration-200 ${
-                role === "creator" 
-                  ? "bg-purple-500/10 border-purple-500/50" 
+              className={`relative cursor-pointer p-4 rounded-xl border transition-all duration-200 ${role === "creator"
+                  ? "bg-purple-500/10 border-purple-500/50"
                   : "bg-white/5 border-white/10 hover:border-white/20"
-              }`}
+                }`}
             >
               {role === "creator" && (
                 <CheckCircle2 className="absolute top-4 right-4 w-5 h-5 text-purple-400" />
@@ -149,10 +147,10 @@ export default function SelectRolePage() {
             disabled={loading}
             className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl 
             disabled:opacity-50 disabled:cursor-not-allowed transition font-medium text-sm
-            ${role === "creator" 
-              ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500" 
-              : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500"
-            }
+            ${role === "creator"
+                ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500"
+                : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500"
+              }
             `}
           >
             {loading ? "Creating your account..." : "Complete Setup"}
