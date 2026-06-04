@@ -4,10 +4,16 @@ import { useState, useEffect } from "react"
 import BackgroundGlow from "@/components/common/BackgroundGlow"
 import GridPattern from "@/components/common/GridPattern"
 import TipTapEditor from "@/components/editor/TipTapEditor"
-import { Image as ImageIcon, Send, Save, ArrowLeft, X, Settings } from "lucide-react"
+import { Image as ImageIcon, Send, Save, ArrowLeft, X, Settings, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { articleApi } from "@/lib/api"
+import { useRouter } from "next/navigation"
 
 function CreateBlogPage() {
+    const router = useRouter()
+    const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState("")
+
     // Main Content
     const [title, setTitle] = useState("")
     const [content, setContent] = useState("")
@@ -40,20 +46,32 @@ function CreateBlogPage() {
         }
     }, [title])
 
-    const handlePublish = (status: 'published' | 'draft') => {
-        const articleData = {
-            title,
-            seoSlug,
-            bannerImage: { url: coverImage, publicId: "" }, // Adjust based on your upload logic
-            content,
-            summary,
-            category,
-            tags,
-            seoKeywords,
-            status
+    const handlePublish = async (status: 'published' | 'draft') => {
+        setIsLoading(true)
+        setError("")
+        try {
+            const articleData = {
+                title,
+                seoSlug,
+                bannerImage: coverImage ? { url: coverImage, publicId: "" } : undefined, // Adjust based on your upload logic
+                content,
+                summary,
+                category,
+                tags,
+                seoKeywords,
+                status
+            }
+            console.log(`Saving as ${status}:`, articleData)
+            await articleApi.create(articleData)
+            
+            // Redirect after successful save
+            router.push('/dashboard')
+        } catch (err: any) {
+            console.error("Failed to save article:", err)
+            setError(err.message || "An error occurred while saving the article.")
+        } finally {
+            setIsLoading(false)
         }
-        console.log(`Saving as ${status}:`, articleData)
-        // Add API call here
     }
 
     const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -80,7 +98,7 @@ function CreateBlogPage() {
 
     return (
         <main className="min-h-screen overflow-y-auto bg-[#0A0A0B] text-white relative flex flex-col">
-            <div className="absolute inset-0 overflow-hidden pointer-events-none fixed">
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <BackgroundGlow />
                 <GridPattern />
             </div>
@@ -93,18 +111,21 @@ function CreateBlogPage() {
                 </Link>
 
                 <div className="flex items-center gap-4">
+                    {error && <span className="text-red-400 text-sm">{error}</span>}
                     <button 
                         onClick={() => handlePublish('draft')}
-                        className="px-4 py-2 rounded-full text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2"
+                        disabled={isLoading}
+                        className="px-4 py-2 rounded-full text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2 disabled:opacity-50"
                     >
-                        <Save size={16} />
+                        {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                         Save Draft
                     </button>
                     <button 
                         onClick={() => handlePublish('published')}
-                        className="px-5 py-2.5 rounded-full text-sm font-medium bg-white text-black hover:bg-gray-200 transition-colors flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                        disabled={isLoading}
+                        className="px-5 py-2.5 rounded-full text-sm font-medium bg-white text-black hover:bg-gray-200 transition-colors flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.2)] disabled:opacity-50"
                     >
-                        <Send size={16} />
+                        {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                         Publish
                     </button>
                 </div>

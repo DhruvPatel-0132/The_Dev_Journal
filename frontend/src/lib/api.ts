@@ -169,6 +169,21 @@ export const authApi = {
   },
 };
 
+export const articleApi = {
+  create: async (data: any) => {
+    // Ensure we send cookies for authentication
+    const res = await fetch(`${API_URL}/articles`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  }
+};
+
 export const verifyAndRefreshToken = async () => {
   let token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   if (!token || token === "undefined" || token === "null") return null;

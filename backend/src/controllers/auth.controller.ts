@@ -58,13 +58,15 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.cookie("accessToken", result.accessToken, {
       httpOnly: true,
       maxAge: 15 * 60 * 1000,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
       maxAge: result.expiresDays * 24 * 60 * 60 * 1000,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     res.status(200).json({
@@ -89,13 +91,15 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
     res.cookie("accessToken", result.accessToken, {
       httpOnly: true,
       maxAge: 15 * 60 * 1000,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
       maxAge: result.expiresDays * 24 * 60 * 60 * 1000,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     res.status(200).json({ success: true, message: "Token refreshed successfully", token: result.accessToken });
@@ -114,11 +118,13 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 
     res.clearCookie("accessToken", {
       httpOnly: true,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     res.status(200).json({ success: true, message: "Logout successful" });
@@ -139,13 +145,15 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
       res.cookie("accessToken", result.accessToken, {
         httpOnly: true,
         maxAge: 15 * 60 * 1000,
-        sameSite: "strict",
+        sameSite: "lax",
+        path: "/",
       });
 
       res.cookie("refreshToken", result.refreshToken, {
         httpOnly: true,
         maxAge: result.expiresDays! * 24 * 60 * 60 * 1000,
-        sameSite: "strict",
+        sameSite: "lax",
+        path: "/",
       });
     }
 
@@ -170,13 +178,15 @@ export const completeGoogleAuth = async (req: Request, res: Response): Promise<v
     res.cookie("accessToken", result.accessToken, {
       httpOnly: true,
       maxAge: 15 * 60 * 1000,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
       maxAge: result.expiresDays * 24 * 60 * 60 * 1000,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     res.status(201).json({
@@ -205,13 +215,15 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
     res.cookie("accessToken", result.accessToken, {
       httpOnly: true,
       maxAge: 15 * 60 * 1000,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
       maxAge: result.expiresDays * 24 * 60 * 60 * 1000,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     res.status(200).json({
