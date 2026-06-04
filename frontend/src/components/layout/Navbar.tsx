@@ -9,6 +9,7 @@ import { jwtDecode } from "jwt-decode";
 
 export default function Navbar() {
   const router = useRouter();
+  
   const handleDashboardRedirect = () => {
     const token = localStorage.getItem("token");
 

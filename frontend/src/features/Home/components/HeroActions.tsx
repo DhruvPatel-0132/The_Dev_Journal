@@ -4,32 +4,24 @@ import { useState } from "react";
 import { ArrowRight, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { jwtDecode } from "jwt-decode";
 
 export default function HeroActions() {
   const router = useRouter();
   const [showToast, setShowToast] = useState(false);
 
   const handleDiscoverContent = () => {
-    const token =
-      typeof window !== "undefined"
-        ? localStorage.getItem("token")
-        : null;
+    const token = localStorage.getItem("token");
 
-    const userStr =
-      typeof window !== "undefined"
-        ? localStorage.getItem("user")
-        : null;
-
-    // Not logged in
-    if (!token || !userStr) {
+    if (!token) {
       router.push("/login");
       return;
     }
 
     try {
-      const user = JSON.parse(userStr);
+      const decoded: any = jwtDecode(token);
 
-      switch (user?.role) {
+      switch (decoded.role) {
         case "creator":
           router.push("/dashboard");
           break;
