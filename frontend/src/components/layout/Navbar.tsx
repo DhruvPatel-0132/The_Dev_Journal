@@ -5,14 +5,40 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Logo from "./Logo";
+import { jwtDecode } from "jwt-decode";
 
 export default function Navbar() {
   const router = useRouter();
+  const handleDashboardRedirect = () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    try {
+      const decoded: any = jwtDecode(token);
+
+      switch (decoded.role) {
+        case "creator":
+          router.push("/dashboard");
+          break;
+
+        case "visitor":
+          router.push("/blog");
+          break;
+
+      }
+    } catch {
+      router.push("/login");
+    }
+  };
 
   const handleExploreClick = () => {
     const token = localStorage.getItem("token");
     if (token) {
-      router.push("/blogs");
+      router.push("/blog");
     } else {
       router.push("/login");
     }
@@ -32,19 +58,17 @@ export default function Navbar() {
         </motion.div>
 
         <div className="flex items-center gap-3">
-          <button 
+          {/* <button 
             onClick={handleExploreClick}
             className="cursor-pointer h-10 sm:h-11 px-4 sm:px-6 rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-xl text-sm hover:border-indigo-500/40 hover:bg-indigo-500/10 transition-all duration-300"
           >
             Explore
-          </button>
+          </button> */}
 
-          <Link href="/login">
-            <button className="cursor-pointer h-10 sm:h-11 px-4 sm:px-6 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 text-sm font-semibold flex items-center gap-2 shadow-[0_0_35px_rgba(99,102,241,0.35)] hover:scale-[1.02] transition-all duration-300">
+            <button onClick={handleDashboardRedirect} className="cursor-pointer h-10 sm:h-11 px-4 sm:px-6 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 text-sm font-semibold flex items-center gap-2 shadow-[0_0_35px_rgba(99,102,241,0.35)] hover:scale-[1.02] transition-all duration-300">
               Sign In
               <ArrowRight className="w-4 h-4" />
             </button>
-          </Link>
         </div>
       </div>
     </header>

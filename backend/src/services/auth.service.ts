@@ -72,7 +72,7 @@ export const loginUser = async (data: any) => {
     { upsert: true, new: true }
   );
 
-  const redirect = profile.role === "creator" ? "/dashboard" : "/blogs";
+  const redirect = profile.role === "creator" ? "/dashboard" : "/blog";
 
   return {
     accessToken,
@@ -191,7 +191,7 @@ export const processGoogleAuth = async (credential: string) => {
       { upsert: true, new: true }
     );
 
-    const redirect = profile.role === "creator" ? "/dashboard" : "/blogs";
+    const redirect = profile.role === "creator" ? "/dashboard" : "/blog";
 
     return {
       existingUser: true,
@@ -270,7 +270,7 @@ export const completeGoogleRegistration = async (credential: string, role: strin
     { upsert: true, new: true }
   );
 
-  const redirect = profile.role === "creator" ? "/dashboard" : "/blogs";
+  const redirect = profile.role === "creator" ? "/dashboard" : "/blog";
 
   return {
     accessToken,
