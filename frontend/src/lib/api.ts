@@ -116,4 +116,44 @@ export const authApi = {
     if (!res.ok) throw new Error(result.message);
     return result;
   },
+
+  verifyOTP: async (email: string, otp: string) => {
+    const res = await fetch(`${API_URL}/auth/verify-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email, otp }),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+
+  resendOTP: async (email: string) => {
+    const res = await fetch(`${API_URL}/auth/resend-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email }),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+
+  loginRaw: async (data: {
+    email: string;
+    password: string;
+    rememberMe?: boolean;
+  }) => {
+    const res = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    // Return result regardless so caller can read unverified flag
+    return { ...result, ok: res.ok, status: res.status };
+  },
 };

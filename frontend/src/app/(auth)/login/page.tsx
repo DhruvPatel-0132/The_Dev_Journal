@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { Mail, Lock, ArrowRight, AlertCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Mail, Lock, ArrowRight, AlertCircle, MailOpen } from "lucide-react";
 import AuthCard from "../_components/AuthCard";
 import { authApi } from "@/lib/api";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [unverified, setUnverified] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,9 +27,21 @@ export default function LoginPage() {
 
     setLoading(true);
     setError("");
+    setUnverified(false);
 
     try {
-      const data = await authApi.login({ email, password, rememberMe });
+      const data = await authApi.loginRaw({ email, password, rememberMe });
+
+      if (!data.ok) {
+        if (data.status === 403 && data.unverified) {
+          setUnverified(true);
+          setError("Your email is not verified yet.");
+        } else {
+          setError(data.message || "Invalid credentials");
+        }
+        return;
+      }
+
       if (data.token) {
         localStorage.setItem("token", data.token);
         if (data.user) {
@@ -104,12 +117,41 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {error && (
-          <div className="flex items-center gap-2 p-3 text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl">
-            <AlertCircle className="w-4 h-4" />
-            {error}
-          </div>
-        )}
+        <AnimatePresence>
+          {unverified ? (
+            <motion.div
+              key="unverified"
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="p-3 rounded-xl bg-amber-400/10 border border-amber-400/20 space-y-2"
+            >
+              <div className="flex items-center gap-2 text-sm text-amber-400">
+                <MailOpen className="w-4 h-4 shrink-0" />
+                <span>Your email is not verified yet.</span>
+              </div>
+              <Link
+                href={`/verify-otp?email=${encodeURIComponent(email)}`}
+                className="block w-full text-center py-2 rounded-lg text-xs font-medium
+                  bg-amber-400/10 hover:bg-amber-400/20 text-amber-300
+                  border border-amber-400/20 transition"
+              >
+                Verify your email →
+              </Link>
+            </motion.div>
+          ) : error ? (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-2 p-3 text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl"
+            >
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {error}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Inputs */}
