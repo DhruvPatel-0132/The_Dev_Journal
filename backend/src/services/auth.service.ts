@@ -142,12 +142,58 @@ export const verifyOTP = async (email: string, otp: string) => {
   }
 
   // Mark user as verified
-  await User.findByIdAndUpdate(record.userId, { isEmailVerified: true });
+  const user = await User.findByIdAndUpdate(
+    record.userId,
+    { isEmailVerified: true },
+    { new: true }
+  );
+  if (!user) {
+    throw new AppError("User not found.", 404);
+  }
 
   // Clean up OTP record
   await EmailVerificationOTP.deleteOne({ _id: record._id });
 
-  return { success: true };
+  // Get profile for role-based redirect
+  const profile = await Profile.findOne({ user: user._id });
+  if (!profile) {
+    throw new AppError("Profile not found.", 404);
+  }
+
+  // Issue tokens — user is now logged in
+  const tokenPayload = {
+    id: user._id,
+    role: profile.role,
+    rememberMe: false,
+  };
+
+  const accessToken = generateAccessToken(tokenPayload);
+  const refreshToken = generateRefreshToken(tokenPayload, "7d");
+
+  const expiresDays = 7;
+  const expiresAt = new Date(Date.now() + expiresDays * 24 * 60 * 60 * 1000);
+
+  await Token.findOneAndUpdate(
+    { userId: user._id },
+    { accessToken, refreshToken, expiresAt },
+    { upsert: true, new: true }
+  );
+
+  const redirect = profile.role === "creator" ? "/dashboard" : "/blog";
+
+  return {
+    accessToken,
+    refreshToken,
+    expiresDays,
+    user: {
+      id: user._id,
+      name: profile.name,
+      email: profile.email,
+      role: profile.role,
+      avatar: profile.avatar,
+    },
+    redirect,
+  };
 };
 
 // ─────────────────────────────────────────────

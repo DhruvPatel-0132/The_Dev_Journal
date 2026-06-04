@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowRight, User } from "lucide-react";
 import Logo from "./Logo";
@@ -10,7 +10,8 @@ import { useEffect, useState } from "react";
 
 export default function BlogNavbar() {
   const router = useRouter();
-  const [user, setUser] = useState<{name: string, email: string, avatar: string} | null>(null);
+  const [user, setUser] = useState<{ name: string, email: string, avatar: string } | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -29,7 +30,7 @@ export default function BlogNavbar() {
     } catch (e) {
       console.error("Failed to logout from backend", e);
     }
-    
+
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
@@ -50,19 +51,43 @@ export default function BlogNavbar() {
         </motion.div>
 
         <div className="flex items-center gap-3">
+          {user && pathname === "/dashboard" && (
+            <Link href="/blog">
+              <button className="cursor-pointer h-10 sm:h-11 px-4 sm:px-5 rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-xl text-sm font-medium text-zinc-200 hover:bg-white/[0.06] transition-all duration-300">
+                Blog
+              </button>
+            </Link>
+          )}
+
+          {user && pathname === "/blog" && (
+            <Link href="/dashboard">
+              <button className="cursor-pointer h-10 sm:h-11 px-4 sm:px-5 rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-xl text-sm font-medium text-zinc-200 hover:bg-white/[0.06] transition-all duration-300">
+                Dashboard
+              </button>
+            </Link>
+          )}
+
           {user ? (
             <div className="flex items-center gap-4">
+              {/* User Profile */}
               <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 px-4 py-2 rounded-xl backdrop-blur-xl">
                 {user.avatar ? (
-                  <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
+                  <img
+                    src={user.avatar}
+                    alt={user.name}
+                    className="w-8 h-8 rounded-full"
+                  />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
                     <User className="w-4 h-4 text-indigo-400" />
                   </div>
                 )}
-                <span className="text-sm font-medium text-zinc-200">{user.name}</span>
+                <span className="text-sm font-medium text-zinc-200">
+                  {user.name}
+                </span>
               </div>
-              <button 
+
+              <button
                 onClick={handleLogout}
                 className="cursor-pointer text-xs text-zinc-400 hover:text-white transition-colors underline-offset-4 hover:underline"
               >

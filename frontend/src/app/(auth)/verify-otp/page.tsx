@@ -93,9 +93,17 @@ export default function VerifyOTPPage() {
     setError("");
 
     try {
-      await authApi.verifyOTP(email, code);
+      const data = await authApi.verifyOTP(email, code);
+
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        if (data.user) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+        }
+      }
+
       setSuccess(true);
-      setTimeout(() => router.push("/login"), 2000);
+      setTimeout(() => router.push(data.redirect || "/"), 2000);
     } catch (err: any) {
       setError(err.message || "Invalid OTP. Please try again.");
       triggerShake();
@@ -159,7 +167,7 @@ export default function VerifyOTPPage() {
                 <h1 className="text-2xl font-semibold tracking-tight text-green-400">
                   Email Verified!
                 </h1>
-                <p className="text-sm text-zinc-500">Redirecting you to login...</p>
+                <p className="text-sm text-zinc-500">Redirecting...</p>
               </motion.div>
             ) : (
               <motion.div key="form" className="space-y-1">

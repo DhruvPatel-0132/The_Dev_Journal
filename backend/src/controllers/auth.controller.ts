@@ -199,8 +199,26 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ success: false, message: "Email and OTP are required" });
       return;
     }
-    await authService.verifyOTP(email, otp);
-    res.status(200).json({ success: true, message: "Email verified successfully. You can now log in." });
+    const result = await authService.verifyOTP(email, otp);
+
+    res.cookie("accessToken", result.accessToken, {
+      httpOnly: true,
+      maxAge: 15 * 60 * 1000,
+      sameSite: "strict",
+    });
+
+    res.cookie("refreshToken", result.refreshToken, {
+      httpOnly: true,
+      maxAge: result.expiresDays * 24 * 60 * 60 * 1000,
+      sameSite: "strict",
+    });
+
+    res.status(200).json({
+      success: true,
+      token: result.accessToken,
+      user: result.user,
+      redirect: result.redirect,
+    });
   } catch (error) {
     handleError(res, error, "OTP verification failed");
   }
