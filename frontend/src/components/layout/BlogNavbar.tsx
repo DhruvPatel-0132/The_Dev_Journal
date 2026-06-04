@@ -8,13 +8,22 @@ import Logo from "./Logo";
 import { authApi } from "@/lib/api";
 import { useEffect, useState } from "react";
 
+type UserType = {
+  name: string;
+  email: string;
+  avatar: string;
+  role?: string;
+};
+
 export default function BlogNavbar() {
   const router = useRouter();
-  const [user, setUser] = useState<{ name: string, email: string, avatar: string } | null>(null);
   const pathname = usePathname();
+
+  const [user, setUser] = useState<UserType | null>(null);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
+
     if (userData) {
       try {
         setUser(JSON.parse(userData));
@@ -33,9 +42,12 @@ export default function BlogNavbar() {
 
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+
     setUser(null);
     router.push("/");
   };
+
+  const isVisitor = user?.role?.toUpperCase() === "VISITOR";
 
   return (
     <header className="absolute top-0 left-0 w-full z-50">
@@ -51,15 +63,8 @@ export default function BlogNavbar() {
         </motion.div>
 
         <div className="flex items-center gap-3">
-          {user && pathname === "/dashboard" && (
-            <Link href="/blog">
-              <button className="cursor-pointer h-10 sm:h-11 px-4 sm:px-5 rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-xl text-sm font-medium text-zinc-200 hover:bg-white/[0.06] transition-all duration-300">
-                Blog
-              </button>
-            </Link>
-          )}
-
-          {user && pathname === "/blog" && (
+          {/* Show Dashboard button only for non-visitors on Blog page */}
+          {user && !isVisitor && pathname === "/blog" && (
             <Link href="/dashboard">
               <button className="cursor-pointer h-10 sm:h-11 px-4 sm:px-5 rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-xl text-sm font-medium text-zinc-200 hover:bg-white/[0.06] transition-all duration-300">
                 Dashboard
@@ -67,21 +72,30 @@ export default function BlogNavbar() {
             </Link>
           )}
 
+          {/* Show Blog button on Dashboard pages */}
+          {user && pathname.startsWith("/dashboard") && (
+            <Link href="/blog">
+              <button className="cursor-pointer h-10 sm:h-11 px-4 sm:px-5 rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-xl text-sm font-medium text-zinc-200 hover:bg-white/[0.06] transition-all duration-300">
+                Blog
+              </button>
+            </Link>
+          )}
+
           {user ? (
             <div className="flex items-center gap-4">
-              {/* User Profile */}
               <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 px-4 py-2 rounded-xl backdrop-blur-xl">
                 {user.avatar ? (
                   <img
                     src={user.avatar}
                     alt={user.name}
-                    className="w-8 h-8 rounded-full"
+                    className="w-8 h-8 rounded-full object-cover"
                   />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
                     <User className="w-4 h-4 text-indigo-400" />
                   </div>
                 )}
+
                 <span className="text-sm font-medium text-zinc-200">
                   {user.name}
                 </span>
