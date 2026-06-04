@@ -18,7 +18,11 @@ const handleError = (res: Response, error: any, defaultMessage: string) => {
     return;
   }
   if (error instanceof AppError) {
-    res.status(error.statusCode).json({ success: false, message: error.message });
+    // Attach unverified flag so frontend can show resend option
+    const extra = error.statusCode === 403 && error.message.includes("verify your email")
+      ? { unverified: true }
+      : {};
+    res.status(error.statusCode).json({ success: false, message: error.message, ...extra });
     return;
   }
   console.error(`[Auth Controller Error] ${defaultMessage}:`, error);
@@ -31,12 +35,12 @@ const handleError = (res: Response, error: any, defaultMessage: string) => {
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const validatedData = registerSchema.parse(req.body);
-    const user = await authService.registerUser(validatedData);
+    const result = await authService.registerUser(validatedData);
 
     res.status(201).json({
       success: true,
-      message: "Account created successfully",
-      user,
+      message: "We've sent a 6-digit verification code to your email. Please check your inbox.",
+      email: result.email,
     });
   } catch (error) {
     handleError(res, error, "Registration failed");
@@ -54,13 +58,15 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.cookie("accessToken", result.accessToken, {
       httpOnly: true,
       maxAge: 15 * 60 * 1000,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
       maxAge: result.expiresDays * 24 * 60 * 60 * 1000,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     res.status(200).json({
@@ -85,16 +91,18 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
     res.cookie("accessToken", result.accessToken, {
       httpOnly: true,
       maxAge: 15 * 60 * 1000,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
       maxAge: result.expiresDays * 24 * 60 * 60 * 1000,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
-    res.status(200).json({ success: true, message: "Token refreshed successfully" });
+    res.status(200).json({ success: true, message: "Token refreshed successfully", token: result.accessToken });
   } catch (error) {
     handleError(res, error, "Refresh failed");
   }
@@ -110,11 +118,13 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 
     res.clearCookie("accessToken", {
       httpOnly: true,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     res.status(200).json({ success: true, message: "Logout successful" });
@@ -135,18 +145,21 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
       res.cookie("accessToken", result.accessToken, {
         httpOnly: true,
         maxAge: 15 * 60 * 1000,
-        sameSite: "strict",
+        sameSite: "lax",
+        path: "/",
       });
 
       res.cookie("refreshToken", result.refreshToken, {
         httpOnly: true,
         maxAge: result.expiresDays! * 24 * 60 * 60 * 1000,
-        sameSite: "strict",
+        sameSite: "lax",
+        path: "/",
       });
     }
 
     res.status(200).json({
       success: true,
+      token: result.accessToken,
       ...result,
     });
   } catch (error) {
@@ -165,13 +178,15 @@ export const completeGoogleAuth = async (req: Request, res: Response): Promise<v
     res.cookie("accessToken", result.accessToken, {
       httpOnly: true,
       maxAge: 15 * 60 * 1000,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
       maxAge: result.expiresDays * 24 * 60 * 60 * 1000,
-      sameSite: "strict",
+      sameSite: "lax",
+      path: "/",
     });
 
     res.status(201).json({
@@ -182,6 +197,60 @@ export const completeGoogleAuth = async (req: Request, res: Response): Promise<v
     });
   } catch (error) {
     handleError(res, error, "Account completion failed");
+  }
+};
+
+// ─────────────────────────────────────────────
+// VERIFY OTP
+// ─────────────────────────────────────────────
+export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      res.status(400).json({ success: false, message: "Email and OTP are required" });
+      return;
+    }
+    const result = await authService.verifyOTP(email, otp);
+
+    res.cookie("accessToken", result.accessToken, {
+      httpOnly: true,
+      maxAge: 15 * 60 * 1000,
+      sameSite: "lax",
+      path: "/",
+    });
+
+    res.cookie("refreshToken", result.refreshToken, {
+      httpOnly: true,
+      maxAge: result.expiresDays * 24 * 60 * 60 * 1000,
+      sameSite: "lax",
+      path: "/",
+    });
+
+    res.status(200).json({
+      success: true,
+      token: result.accessToken,
+      user: result.user,
+      redirect: result.redirect,
+    });
+  } catch (error) {
+    handleError(res, error, "OTP verification failed");
+  }
+};
+
+// ─────────────────────────────────────────────
+// RESEND OTP
+// ─────────────────────────────────────────────
+export const resendOTP = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400).json({ success: false, message: "Email is required" });
+      return;
+    }
+    await authService.resendOTP(email);
+    res.status(200).json({ success: true, message: "If that email exists and is unverified, a new OTP has been sent." });
+  } catch (error) {
+    handleError(res, error, "Resend OTP failed");
   }
 };
 

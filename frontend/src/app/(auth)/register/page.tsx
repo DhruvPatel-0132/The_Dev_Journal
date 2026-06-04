@@ -29,8 +29,8 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      await authApi.register({ name, email, password, role });
-      router.push("/login");
+      const data = await authApi.register({ name, email, password, role });
+      router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
     } catch (err: any) {
       setError(err.message || "Registration failed");
     } finally {

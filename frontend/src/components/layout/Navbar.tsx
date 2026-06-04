@@ -6,37 +6,42 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Logo from "./Logo";
 import { jwtDecode } from "jwt-decode";
+import { verifyAndRefreshToken } from "@/lib/api";
 
 export default function Navbar() {
   const router = useRouter();
-  const handleDashboardRedirect = () => {
-    const token = localStorage.getItem("token");
+  
+  const handleDashboardRedirect = async () => {
+    const token = await verifyAndRefreshToken();
 
     if (!token) {
       router.push("/login");
       return;
     }
 
+    let decoded: any;
     try {
-      const decoded: any = jwtDecode(token);
+      decoded = jwtDecode(token);
+    } catch (err) {
+      console.error("Token decode error:", err);
+      localStorage.removeItem("token");
+      router.push("/login");
+      return;
+    }
 
-      switch (decoded.role) {
-        case "creator":
-          router.push("/dashboard");
-          break;
-
-        case "visitor":
-          router.push("/blog");
-          break;
-
-      }
-    } catch {
+    const role = decoded?.role?.toLowerCase();
+    if (role === "creator") {
+      router.push("/dashboard");
+    } else if (role === "visitor") {
+      router.push("/blog");
+    } else {
       router.push("/login");
     }
   };
 
-  const handleExploreClick = () => {
-    const token = localStorage.getItem("token");
+  const handleExploreClick = async () => {
+    const token = await verifyAndRefreshToken();
+
     if (token) {
       router.push("/blog");
     } else {

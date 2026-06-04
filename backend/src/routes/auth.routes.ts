@@ -7,7 +7,9 @@ import {
   googleAuth,
   completeGoogleAuth,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  verifyOTP,
+  resendOTP,
 } from "../controllers/auth.controller";
 import { protectRoute } from "../middlewares/auth.middleware";
 
@@ -21,6 +23,8 @@ router.post("/google", googleAuth);
 router.post("/google/complete", completeGoogleAuth);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
+router.post("/verify-otp", verifyOTP);
+router.post("/resend-otp", resendOTP);
 
 // Example protected route
 router.get("/me", protectRoute, (req, res) => {

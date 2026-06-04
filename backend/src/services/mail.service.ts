@@ -77,3 +77,35 @@ export const sendPasswordResetEmail = async (to: string, resetLink: string) => {
 
   return sendMail({ to, subject, html });
 };
+
+export const sendVerificationOTPEmail = async (to: string, otp: string) => {
+  const subject = "Verify Your Email — The Dev Journal";
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #0f0f0f; color: #e4e4e7; border-radius: 12px;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h2 style="color: #818cf8; font-size: 22px; margin: 0;">The Dev Journal</h2>
+        <p style="color: #71717a; font-size: 13px; margin: 4px 0 0;">Engineering Blog Platform</p>
+      </div>
+
+      <h3 style="font-size: 18px; font-weight: 600; color: #f4f4f5; margin-bottom: 8px;">Verify your email address</h3>
+      <p style="color: #a1a1aa; font-size: 14px; line-height: 1.6; margin-bottom: 24px;">
+        Use the code below to verify your email. This code expires in <strong style="color: #f4f4f5;">10 minutes</strong>.
+      </p>
+
+      <div style="text-align: center; background: #1c1c1e; border: 1px solid #3f3f46; border-radius: 12px; padding: 28px 16px; margin-bottom: 24px;">
+        <span style="font-size: 42px; font-weight: 700; letter-spacing: 14px; color: #818cf8; font-family: 'Courier New', monospace;">${otp}</span>
+      </div>
+
+      <p style="color: #71717a; font-size: 12px; text-align: center; line-height: 1.6;">
+        If you didn't create an account on The Dev Journal, you can safely ignore this email.
+      </p>
+
+      <hr style="border: none; border-top: 1px solid #27272a; margin: 24px 0;" />
+      <p style="color: #52525b; font-size: 11px; text-align: center; margin: 0;">
+        © ${new Date().getFullYear()} The Dev Journal Team
+      </p>
+    </div>
+  `;
+
+  return sendMail({ to, subject, html });
+};

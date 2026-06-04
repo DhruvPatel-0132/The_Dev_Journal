@@ -3,6 +3,8 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IUser extends Document {
   email: string;
   password: string;
+  isEmailVerified: boolean;
+  authProvider: "local" | "google";
 }
 
 const UserSchema = new Schema<IUser>(
@@ -17,6 +19,17 @@ const UserSchema = new Schema<IUser>(
     password: {
       type: String,
       required: true,
+    },
+
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
     },
   },
   {

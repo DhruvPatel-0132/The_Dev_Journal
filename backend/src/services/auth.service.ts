@@ -6,11 +6,22 @@ import User from "../models/User";
 import Profile from "../models/Profile";
 import Token from "../models/Token";
 import ForgotPasswordToken from "../models/ForgotPasswordToken";
-import { sendPasswordResetEmail } from "./mail.service";
+import EmailVerificationOTP from "../models/EmailVerificationOTP";
+import { sendPasswordResetEmail, sendVerificationOTPEmail } from "./mail.service";
 import { AppError } from "../utils/AppError";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+// ─────────────────────────────────────────────
+// HELPER: Generate 6-digit OTP
+// ─────────────────────────────────────────────
+const generateOTP = (): string => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+// ─────────────────────────────────────────────
+// REGISTER
+// ─────────────────────────────────────────────
 export const registerUser = async (data: any) => {
   const { name, email, password, role } = data;
 
@@ -21,20 +32,37 @@ export const registerUser = async (data: any) => {
 
   const hashedPassword = await bcrypt.hash(password, 12);
 
-  // Create User (credentials only)
-  const user = await User.create({ email, password: hashedPassword });
+  // Create User — unverified by default
+  const user = await User.create({
+    email,
+    password: hashedPassword,
+    isEmailVerified: false,
+    authProvider: "local",
+  });
 
-  // Create Profile (display info)
+  // Create Profile
   const profile = await Profile.create({ user: user._id, name, email, role });
 
-  return {
-    id: user._id,
-    name: profile.name,
-    email: profile.email,
-    role: profile.role,
-  };
+  // Generate & store OTP (expires in 10 minutes)
+  const otp = generateOTP();
+  const hashedOTP = await bcrypt.hash(otp, 10);
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  await EmailVerificationOTP.findOneAndUpdate(
+    { userId: user._id },
+    { userId: user._id, email, otp: hashedOTP, expiresAt },
+    { upsert: true, new: true }
+  );
+
+  // Send OTP email
+  await sendVerificationOTPEmail(email, otp);
+
+  return { email };
 };
 
+// ─────────────────────────────────────────────
+// LOGIN
+// ─────────────────────────────────────────────
 export const loginUser = async (data: any) => {
   const { email, password, rememberMe } = data;
 
@@ -46,6 +74,11 @@ export const loginUser = async (data: any) => {
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
     throw new AppError("Invalid credentials", 401);
+  }
+
+  // Block login for unverified local users
+  if (!user.isEmailVerified && user.authProvider === "local") {
+    throw new AppError("Please verify your email before logging in.", 403);
   }
 
   const profile = await Profile.findOne({ user: user._id });
@@ -89,6 +122,110 @@ export const loginUser = async (data: any) => {
   };
 };
 
+// ─────────────────────────────────────────────
+// VERIFY OTP
+// ─────────────────────────────────────────────
+export const verifyOTP = async (email: string, otp: string) => {
+  const record = await EmailVerificationOTP.findOne({ email });
+  if (!record) {
+    throw new AppError("No OTP found for this email. Please request a new one.", 400);
+  }
+
+  if (record.expiresAt < new Date()) {
+    await EmailVerificationOTP.deleteOne({ _id: record._id });
+    throw new AppError("OTP has expired. Please request a new one.", 400);
+  }
+
+  const isMatch = await bcrypt.compare(otp, record.otp);
+  if (!isMatch) {
+    throw new AppError("Invalid OTP. Please try again.", 400);
+  }
+
+  // Mark user as verified
+  const user = await User.findByIdAndUpdate(
+    record.userId,
+    { isEmailVerified: true },
+    { new: true }
+  );
+  if (!user) {
+    throw new AppError("User not found.", 404);
+  }
+
+  // Clean up OTP record
+  await EmailVerificationOTP.deleteOne({ _id: record._id });
+
+  // Get profile for role-based redirect
+  const profile = await Profile.findOne({ user: user._id });
+  if (!profile) {
+    throw new AppError("Profile not found.", 404);
+  }
+
+  // Issue tokens — user is now logged in
+  const tokenPayload = {
+    id: user._id,
+    role: profile.role,
+    rememberMe: false,
+  };
+
+  const accessToken = generateAccessToken(tokenPayload);
+  const refreshToken = generateRefreshToken(tokenPayload, "7d");
+
+  const expiresDays = 7;
+  const expiresAt = new Date(Date.now() + expiresDays * 24 * 60 * 60 * 1000);
+
+  await Token.findOneAndUpdate(
+    { userId: user._id },
+    { accessToken, refreshToken, expiresAt },
+    { upsert: true, new: true }
+  );
+
+  const redirect = profile.role === "creator" ? "/dashboard" : "/blog";
+
+  return {
+    accessToken,
+    refreshToken,
+    expiresDays,
+    user: {
+      id: user._id,
+      name: profile.name,
+      email: profile.email,
+      role: profile.role,
+      avatar: profile.avatar,
+    },
+    redirect,
+  };
+};
+
+// ─────────────────────────────────────────────
+// RESEND OTP
+// ─────────────────────────────────────────────
+export const resendOTP = async (email: string) => {
+  const user = await User.findOne({ email });
+  if (!user) {
+    // Fail silently for security
+    return;
+  }
+
+  if (user.isEmailVerified) {
+    throw new AppError("This email is already verified.", 400);
+  }
+
+  const otp = generateOTP();
+  const hashedOTP = await bcrypt.hash(otp, 10);
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  await EmailVerificationOTP.findOneAndUpdate(
+    { userId: user._id },
+    { userId: user._id, email, otp: hashedOTP, expiresAt },
+    { upsert: true, new: true }
+  );
+
+  await sendVerificationOTPEmail(email, otp);
+};
+
+// ─────────────────────────────────────────────
+// REFRESH TOKEN
+// ─────────────────────────────────────────────
 export const refreshUserToken = async (refreshToken: string) => {
   if (!refreshToken) {
     throw new AppError("No refresh token provided", 401);
@@ -137,12 +274,17 @@ export const refreshUserToken = async (refreshToken: string) => {
   };
 };
 
+// ─────────────────────────────────────────────
+// LOGOUT
+// ─────────────────────────────────────────────
 export const logoutUser = async (refreshToken: string) => {
   if (!refreshToken) return;
-
   await Token.findOneAndDelete({ refreshToken });
 };
 
+// ─────────────────────────────────────────────
+// GOOGLE AUTH
+// ─────────────────────────────────────────────
 export const processGoogleAuth = async (credential: string) => {
   if (!credential) {
     throw new AppError("Missing credential", 400);
@@ -173,6 +315,13 @@ export const processGoogleAuth = async (credential: string) => {
     if (!profile.avatar && picture) {
       profile.avatar = picture;
       await profile.save();
+    }
+
+    // Ensure Google users are always verified
+    if (!user.isEmailVerified) {
+      user.isEmailVerified = true;
+      user.authProvider = "google";
+      await user.save();
     }
 
     const tokenPayload = {
@@ -216,6 +365,9 @@ export const processGoogleAuth = async (credential: string) => {
   };
 };
 
+// ─────────────────────────────────────────────
+// COMPLETE GOOGLE AUTH
+// ─────────────────────────────────────────────
 export const completeGoogleRegistration = async (credential: string, role: string) => {
   if (!credential || !role) {
     throw new AppError("Missing required fields", 400);
@@ -244,7 +396,13 @@ export const completeGoogleRegistration = async (credential: string, role: strin
   const randomPassword = crypto.randomBytes(16).toString("hex");
   const hashedPassword = await bcrypt.hash(randomPassword, 12);
 
-  const user = await User.create({ email, password: hashedPassword });
+  // Google users are pre-verified
+  const user = await User.create({
+    email,
+    password: hashedPassword,
+    isEmailVerified: true,
+    authProvider: "google",
+  });
 
   const profile = await Profile.create({
     user: user._id,
@@ -287,10 +445,13 @@ export const completeGoogleRegistration = async (credential: string, role: strin
   };
 };
 
+// ─────────────────────────────────────────────
+// FORGOT PASSWORD
+// ─────────────────────────────────────────────
 export const requestPasswordReset = async (email: string) => {
   const user = await User.findOne({ email });
   if (!user) {
-    // Return true silently for security
+    // Return silently for security
     return;
   }
 
@@ -308,6 +469,9 @@ export const requestPasswordReset = async (email: string) => {
   await sendPasswordResetEmail(user.email, resetLink);
 };
 
+// ─────────────────────────────────────────────
+// RESET PASSWORD
+// ─────────────────────────────────────────────
 export const executePasswordReset = async (data: any) => {
   const { token, password } = data;
 
