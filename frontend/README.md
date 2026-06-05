@@ -1,5 +1,53 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Folder Structure
+
+Here is the directory structure of the frontend application:
+
+```text
+frontend/
+├── public/                  # Public static assets
+│   ├── FullName_Logo.png
+│   ├── Icon.png
+│   └── Logo.png
+├── src/
+│   ├── app/                 # Next.js App Router (pages and layouts)
+│   │   ├── (auth)/          # Authentication pages (login, register, etc.)
+│   │   │   ├── forgot-password/
+│   │   │   ├── layout.tsx
+│   │   │   ├── login/
+│   │   │   ├── register/
+│   │   │   ├── reset-password/
+│   │   │   ├── select-role/
+│   │   │   ├── verify-otp/
+│   │   │   └── _components/
+│   │   ├── (creator-space)/ # Creator dashboards & actions
+│   │   │   ├── create-blog/
+│   │   │   └── dashboard/
+│   │   ├── (feed)/          # Blog feeds and details
+│   │   │   └── blog/
+│   │   ├── featured/        # Featured content pages
+│   │   ├── globals.css      # Global CSS styles
+│   │   ├── layout.tsx       # Main Root Layout
+│   │   └── page.tsx         # Main Landing Page
+│   ├── components/          # Reusable React components
+│   │   ├── common/          # Shared layout/design elements
+│   │   ├── editor/          # Rich text editor (TipTap integration)
+│   │   ├── home/            # Home page specific components
+│   │   ├── icons/           # SVGs/custom icons
+│   │   ├── layout/          # Navigation and general structure components
+│   │   └── ui/              # Shared base components (shadcn/ui style)
+│   ├── lib/                 # Shared utilities, hooks, config
+│   │   ├── api.ts           # API clients and fetch wrappers
+│   │   ├── auth.ts          # Auth state/helpers
+│   │   └── utils.ts         # Utility helpers
+│   └── middleware.ts        # Route middleware (auth/redirection)
+├── components.json          # shadcn/ui configuration
+├── next.config.ts           # Next.js configuration
+├── package.json             # Frontend dependencies and scripts
+└── tsconfig.json            # TypeScript configuration
+```
+
 ## Getting Started
 
 First, run the development server:

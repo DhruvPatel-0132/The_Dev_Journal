@@ -17,6 +17,50 @@ const handleError = (res: Response, error: any, defaultMessage: string) => {
   res.status(500).json({ success: false, message: defaultMessage });
 };
 
+// ─── Dashboard Stats ─────────────────────────
+export const getDashboardStats = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // @ts-ignore - user is attached by the protectRoute middleware
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Not authorized" });
+      return;
+    }
+
+    const stats = await articleService.getDashboardStats(userId);
+
+    res.status(200).json({ success: true, stats });
+  } catch (error) {
+    handleError(res, error, "Failed to fetch dashboard stats");
+  }
+};
+
+// ─── My Articles ─────────────────────────────
+export const getMyArticles = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // @ts-ignore - user is attached by the protectRoute middleware
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Not authorized" });
+      return;
+    }
+
+    const { page, limit, status } = req.query;
+    const result = await articleService.getMyArticles(userId, {
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+      status: status as string | undefined,
+    });
+
+    res.status(200).json({ success: true, ...result });
+  } catch (error) {
+    handleError(res, error, "Failed to fetch articles");
+  }
+};
+
+// ─── Create Article ──────────────────────────
 export const createArticle = async (req: Request, res: Response): Promise<void> => {
   try {
     const validatedData = createArticleSchema.parse(req.body);

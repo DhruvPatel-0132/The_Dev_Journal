@@ -1,8 +1,14 @@
 import { Router } from "express";
-import { createArticle } from "../controllers/article.controller";
+import { createArticle, getDashboardStats, getMyArticles } from "../controllers/article.controller";
 import { protectRoute } from "../middlewares/auth.middleware";
 
 const router = Router();
+
+// Dashboard stats (aggregated counts & views)
+router.get("/dashboard-stats", protectRoute, getDashboardStats);
+
+// My articles (paginated, filterable by status)
+router.get("/my-articles", protectRoute, getMyArticles);
 
 // Create an article
 router.post("/", protectRoute, createArticle);

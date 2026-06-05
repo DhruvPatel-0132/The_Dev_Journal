@@ -171,7 +171,6 @@ export const authApi = {
 
 export const articleApi = {
   create: async (data: any) => {
-    // Ensure we send cookies for authentication
     const res = await fetch(`${API_URL}/articles`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -181,7 +180,30 @@ export const articleApi = {
     const result = await res.json();
     if (!res.ok) throw new Error(result.message);
     return result;
-  }
+  },
+
+  getDashboardStats: async () => {
+    const res = await fetch(`${API_URL}/articles/dashboard-stats`, {
+      credentials: "include",
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+
+  getMyArticles: async (params?: { page?: number; limit?: number; status?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+    if (params?.status) query.set("status", params.status);
+
+    const res = await fetch(`${API_URL}/articles/my-articles?${query.toString()}`, {
+      credentials: "include",
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
 };
 
 export const verifyAndRefreshToken = async () => {
