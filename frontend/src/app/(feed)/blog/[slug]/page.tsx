@@ -1,9 +1,207 @@
-import React from 'react'
+"use client";
 
-function page() {
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { ArrowLeft, Calendar, Clock, Loader2, Share2, Heart, Eye } from "lucide-react";
+import BackgroundGlow from "@/components/common/BackgroundGlow";
+import GridPattern from "@/components/common/GridPattern";
+import BlogNavbar from "@/components/layout/BlogNavbar";
+import { articleApi } from "@/lib/api";
+import Link from "next/link";
+import Image from "next/image";
+
+export default function ArticlePage() {
+  const params = useParams();
+  const router = useRouter();
+  const slug = params.slug as string;
+
+  const [article, setArticle] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchArticle = async () => {
+      try {
+        setLoading(true);
+        const res = await articleApi.getArticleBySlug(slug);
+        setArticle(res.article);
+      } catch (err: any) {
+        setError(err.message || "Failed to load article");
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (slug) fetchArticle();
+  }, [slug]);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[#0A0A0B] text-white flex items-center justify-center relative">
+        <BackgroundGlow />
+        <Loader2 className="w-10 h-10 text-indigo-400 animate-spin relative z-10" />
+      </main>
+    );
+  }
+
+  if (error || !article) {
+    return (
+      <main className="min-h-screen bg-[#0A0A0B] text-white flex flex-col items-center justify-center relative">
+        <BackgroundGlow />
+        <div className="relative z-10 text-center">
+          <h1 className="text-3xl font-bold mb-4">Article Not Found</h1>
+          <p className="text-zinc-400 mb-8">{error}</p>
+          <button onClick={() => router.back()} className="px-6 py-2 bg-white/5 hover:bg-white/10 rounded-xl transition-colors border border-white/10 inline-flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4" /> Go Back
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <div></div>
-  )
-}
+    <main className="min-h-screen bg-[#0A0A0B] text-white relative selection:bg-indigo-500/30">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <BackgroundGlow />
+        <GridPattern />
+      </div>
 
-export default page
+      <BlogNavbar />
+
+      <article className="relative z-10 pt-32 pb-24 px-5 sm:px-8 xl:px-10 max-w-4xl mx-auto w-full">
+        {/* Back Button */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="mb-10"
+        >
+          <Link href="/blog" className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group">
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Back to Articles
+          </Link>
+        </motion.div>
+
+        {/* Header */}
+        <header className="mb-14 text-center md:text-left">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-wrap items-center justify-center md:justify-start gap-4 mb-6 text-sm text-zinc-400"
+          >
+            <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-medium">
+              {article.category}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <Calendar className="w-4 h-4" />
+              {article.publishedAt ? formatDate(article.publishedAt) : "Draft"}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-4 h-4" />
+              {article.readTime} min read
+            </div>
+          </motion.div>
+
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-8 leading-tight"
+          >
+            {article.title}
+          </motion.h1>
+
+          {/* Author Info & Stats */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex flex-col sm:flex-row items-center justify-between gap-6 py-6 border-y border-white/10"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-lg font-bold">
+                {article.author?.firstName?.[0] || 'A'}
+              </div>
+              <div className="text-left">
+                <p className="font-medium text-white">{article.author?.firstName} {article.author?.lastName}</p>
+                <p className="text-sm text-zinc-400">{article.author?.role === 'company' ? 'Company' : 'Author'}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-6 text-zinc-400">
+              <div className="flex items-center gap-2">
+                <Eye className="w-5 h-5" />
+                <span className="text-sm">{article.viewCount || 0}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Heart className="w-5 h-5 hover:text-rose-400 cursor-pointer transition-colors" />
+                <span className="text-sm">{article.likeCount || 0}</span>
+              </div>
+              <button className="p-2 hover:bg-white/5 rounded-full transition-colors group">
+                <Share2 className="w-5 h-5 group-hover:text-white" />
+              </button>
+            </div>
+          </motion.div>
+        </header>
+
+        {/* Banner Image */}
+        {article.bannerImage?.url && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="relative w-full aspect-[2/1] mb-16 rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
+          >
+            <Image 
+              src={article.bannerImage.url} 
+              alt={article.title}
+              fill
+              className="object-cover"
+              priority
+            />
+          </motion.div>
+        )}
+
+        {/* Content */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="prose prose-invert prose-indigo max-w-none prose-lg
+            prose-headings:font-bold prose-h2:text-3xl prose-h2:mt-12 prose-h2:mb-6
+            prose-p:text-zinc-300 prose-p:leading-relaxed prose-p:mb-6
+            prose-a:text-indigo-400 hover:prose-a:text-indigo-300
+            prose-strong:text-white prose-strong:font-semibold
+            prose-ul:text-zinc-300 prose-li:my-2
+            prose-blockquote:border-indigo-500/50 prose-blockquote:bg-indigo-500/5 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-xl prose-blockquote:not-italic
+            prose-code:text-indigo-300 prose-code:bg-indigo-500/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none
+            prose-pre:bg-[#111113] prose-pre:border prose-pre:border-white/10 prose-pre:shadow-xl"
+          dangerouslySetInnerHTML={{ __html: article.content }}
+        />
+
+        {/* Tags */}
+        {article.tags && article.tags.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="mt-16 pt-8 border-t border-white/10 flex flex-wrap gap-2"
+          >
+            {article.tags.map((tag: string) => (
+              <span key={tag} className="px-3 py-1.5 rounded-lg bg-white/5 text-sm text-zinc-300 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer">
+                #{tag}
+              </span>
+            ))}
+          </motion.div>
+        )}
+      </article>
+    </main>
+  );
+}

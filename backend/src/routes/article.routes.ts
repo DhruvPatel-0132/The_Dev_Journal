@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createArticle, getDashboardStats, getMyArticles } from "../controllers/article.controller";
+import { createArticle, getDashboardStats, getMyArticles, getAllArticles, getArticleBySlug } from "../controllers/article.controller";
 import { protectRoute } from "../middlewares/auth.middleware";
 
 const router = Router();
@@ -9,6 +9,12 @@ router.get("/dashboard-stats", protectRoute, getDashboardStats);
 
 // My articles (paginated, filterable by status)
 router.get("/my-articles", protectRoute, getMyArticles);
+
+// Get all published articles (feed)
+router.get("/", getAllArticles);
+
+// Get article by slug
+router.get("/slug/:slug", getArticleBySlug);
 
 // Create an article
 router.post("/", protectRoute, createArticle);

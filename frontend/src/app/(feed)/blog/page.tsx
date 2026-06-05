@@ -1,50 +1,60 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ChevronLeft, ChevronRight, Calendar, ArrowRight } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Calendar, ArrowRight, Loader2 } from "lucide-react";
 import BackgroundGlow from "@/components/common/BackgroundGlow";
 import GridPattern from "@/components/common/GridPattern";
 import BlogNavbar from "@/components/layout/BlogNavbar";
 import Link from "next/link";
-
-// Mock Data
-const MOCK_BLOGS = [
-  { id: 1, title: "Building Scalable Systems with Node.js", description: "Learn the core concepts of designing distributed systems and microservices using Node.js.", date: "Jun 02, 2026", tags: ["Node.js", "Backend", "Architecture"] },
-  { id: 2, title: "Mastering Framer Motion in Next.js", description: "A comprehensive guide to creating stunning animations and interactions in your React applications.", date: "May 28, 2026", tags: ["React", "Animation", "Frontend"] },
-  { id: 3, title: "The Future of AI in Software Engineering", description: "Exploring how LLMs and agentic AI are reshaping the way we write and maintain code.", date: "May 24, 2026", tags: ["AI", "Future", "Engineering"] },
-  { id: 4, title: "Optimizing Web Vitals for E-commerce", description: "Practical tips and strategies to improve LCP, FID, and CLS scores for better user experiences.", date: "May 15, 2026", tags: ["Performance", "Web", "SEO"] },
-  { id: 5, title: "Understanding React Server Components", description: "Dive deep into RSCs and discover how they change the paradigm of fetching data in React.", date: "May 10, 2026", tags: ["React", "Next.js", "Fullstack"] },
-  { id: 6, title: "Deploying Kubernetes on Bare Metal", description: "Step-by-step tutorial on setting up a highly available K8s cluster from scratch.", date: "May 01, 2026", tags: ["DevOps", "Kubernetes", "Infrastructure"] },
-  { id: 7, title: "Advanced TypeScript Patterns", description: "Elevate your TS skills by mastering mapped types, conditional types, and utility types.", date: "Apr 25, 2026", tags: ["TypeScript", "Advanced", "Types"] },
-  { id: 8, title: "Designing Beautiful UIs with TailwindCSS", description: "How to leverage utility classes to build consistent and responsive user interfaces quickly.", date: "Apr 20, 2026", tags: ["CSS", "Design", "Tailwind"] },
-];
+import { articleApi } from "@/lib/api";
 
 const POSTS_PER_PAGE = 6;
 
 export default function BlogsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  
+  const [blogs, setBlogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const filteredBlogs = useMemo(() => {
-    return MOCK_BLOGS.filter(blog => {
-      const query = searchQuery.toLowerCase();
-      return (
-        blog.title.toLowerCase().includes(query) ||
-        blog.description.toLowerCase().includes(query) ||
-        blog.tags.some(tag => tag.toLowerCase().includes(query))
-      );
-    });
-  }, [searchQuery]);
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        setLoading(true);
+        const res = await articleApi.getAllArticles({
+          page: currentPage,
+          limit: POSTS_PER_PAGE,
+          search: searchQuery || undefined,
+        });
+        setBlogs(res.articles || []);
+        setTotalCount(res.pagination?.total || 0);
+      } catch (err) {
+        console.error("Failed to fetch blogs:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const totalPages = Math.ceil(filteredBlogs.length / POSTS_PER_PAGE);
-  const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
-  const paginatedBlogs = filteredBlogs.slice(startIndex, startIndex + POSTS_PER_PAGE);
+    const timeoutId = setTimeout(() => {
+      fetchBlogs();
+    }, 300); // debounce search
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, currentPage]);
 
   // Reset page when search changes
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
+
+  const totalPages = Math.ceil(totalCount / POSTS_PER_PAGE);
+
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: '2-digit' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+  };
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#0A0A0B] text-white relative">
@@ -91,57 +101,63 @@ export default function BlogsPage() {
         </div>
 
         {/* Blog Grid */}
-        <motion.div 
-          layout
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-          <AnimatePresence mode="popLayout">
-            {paginatedBlogs.length > 0 ? (
-              paginatedBlogs.map((blog, index) => (
-                <motion.div
-                  key={blog.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.4, delay: index * 0.05 }}
-                  className="group relative flex flex-col h-full bg-white/[0.02] border border-white/[0.05] hover:border-indigo-500/30 rounded-2xl p-6 transition-all hover:bg-white/[0.04]"
-                >
-                  <div className="flex items-center gap-2 text-xs text-zinc-500 mb-4">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {blog.date}
-                  </div>
-                  <h3 className="text-xl font-semibold mb-3 group-hover:text-indigo-300 transition-colors">
-                    {blog.title}
-                  </h3>
-                  <p className="text-zinc-400 text-sm flex-grow mb-6 line-clamp-3">
-                    {blog.description}
-                  </p>
-                  
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {blog.tags.map(tag => (
-                      <span key={tag} className="px-2.5 py-1 rounded-md bg-white/5 text-xs text-zinc-300 border border-white/10">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
+        {loading && blogs.length === 0 ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+          </div>
+        ) : (
+          <motion.div 
+            layout
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+            <AnimatePresence mode="popLayout">
+              {blogs.length > 0 ? (
+                blogs.map((blog, index) => (
+                  <motion.div
+                    key={blog._id || index}
+                    layout
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.4, delay: index * 0.05 }}
+                    className="group relative flex flex-col h-full bg-white/[0.02] border border-white/[0.05] hover:border-indigo-500/30 rounded-2xl p-6 transition-all hover:bg-white/[0.04]"
+                  >
+                    <div className="flex items-center gap-2 text-xs text-zinc-500 mb-4">
+                      <Calendar className="w-3.5 h-3.5" />
+                      {blog.publishedAt ? formatDate(blog.publishedAt) : "Draft"}
+                    </div>
+                    <h3 className="text-xl font-semibold mb-3 group-hover:text-indigo-300 transition-colors">
+                      {blog.title}
+                    </h3>
+                    <p className="text-zinc-400 text-sm flex-grow mb-6 line-clamp-3">
+                      {blog.summary}
+                    </p>
+                    
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {blog.tags?.map((tag: string) => (
+                        <span key={tag} className="px-2.5 py-1 rounded-md bg-white/5 text-xs text-zinc-300 border border-white/10">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
 
-                  <Link href={`#`} className="mt-auto inline-flex items-center gap-2 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
-                    Read Article <ArrowRight className="w-4 h-4" />
-                  </Link>
+                    <Link href={`/blog/${blog.seoSlug}`} className="mt-auto inline-flex items-center gap-2 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
+                      Read Article <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </motion.div>
+                ))
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="col-span-full py-20 text-center"
+                >
+                  <p className="text-zinc-400 text-lg">No articles found matching "{searchQuery}"</p>
                 </motion.div>
-              ))
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="col-span-full py-20 text-center"
-              >
-                <p className="text-zinc-400 text-lg">No articles found matching "{searchQuery}"</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (
@@ -153,7 +169,7 @@ export default function BlogsPage() {
           >
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
+              disabled={currentPage === 1 || loading}
               className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -163,7 +179,7 @@ export default function BlogsPage() {
             </span>
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
+              disabled={currentPage === totalPages || loading}
               className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronRight className="w-5 h-5" />

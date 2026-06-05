@@ -111,3 +111,61 @@ export const getMyArticles = async (
     },
   };
 };
+
+// ─── All Published Articles (paginated) ──────
+export const getAllPublishedArticles = async (
+  options: { page?: number; limit?: number; search?: string }
+) => {
+  const page = options.page || 1;
+  const limit = options.limit || 10;
+  const skip = (page - 1) * limit;
+
+  const filter: any = { status: "published" };
+  
+  if (options.search) {
+    const searchRegex = new RegExp(options.search, 'i');
+    filter.$or = [
+      { title: searchRegex },
+      { summary: searchRegex },
+      { tags: { $in: [searchRegex] } },
+      { category: searchRegex }
+    ];
+  }
+
+  const [articles, total] = await Promise.all([
+    Article.find(filter)
+      .populate("author", "firstName lastName profilePicture role")
+      .sort({ publishedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .select("title seoSlug summary category tags viewCount likeCount readTime publishedAt bannerImage"),
+    Article.countDocuments(filter),
+  ]);
+
+  return {
+    articles,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
+// ─── Get Single Article by Slug ──────────────
+export const getArticleBySlug = async (slug: string) => {
+  const article = await Article.findOne({ seoSlug: slug, status: "published" })
+    .populate("author", "firstName lastName profilePicture role")
+    .select("-__v");
+    
+  if (!article) {
+    throw new AppError("Article not found", 404);
+  }
+
+  // Increment view count
+  article.viewCount += 1;
+  await article.save();
+
+  return article;
+};
