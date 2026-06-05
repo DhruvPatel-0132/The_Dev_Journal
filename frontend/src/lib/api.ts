@@ -182,6 +182,18 @@ export const articleApi = {
     return result;
   },
 
+  update: async (slug: string, data: any) => {
+    const res = await fetch(`${API_URL}/articles/slug/${slug}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+
   getDashboardStats: async () => {
     const res = await fetch(`${API_URL}/articles/dashboard-stats`, {
       credentials: "include",
@@ -225,6 +237,45 @@ export const articleApi = {
     if (!res.ok) throw new Error(result.message);
     return result;
   },
+
+  getArticleForEdit: async (slug: string) => {
+    const res = await fetch(`${API_URL}/articles/edit/${slug}`, {
+      credentials: "include",
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+
+  toggleLike: async (slug: string) => {
+    const res = await fetch(`${API_URL}/articles/slug/${slug}/like`, { method: "POST" });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+
+  toggleDislike: async (slug: string) => {
+    const res = await fetch(`${API_URL}/articles/slug/${slug}/dislike`, { method: "POST" });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+};
+
+export const uploadApi = {
+  uploadImage: async (file: File) => {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const res = await fetch(`${API_URL}/upload/image`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  }
 };
 
 export const verifyAndRefreshToken = async () => {

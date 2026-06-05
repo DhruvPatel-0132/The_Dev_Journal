@@ -15,7 +15,11 @@ export interface IArticle extends Document {
   author: mongoose.Types.ObjectId;
   readTime: number;
   viewCount: number;
+  viewedIps: string[];
   likeCount: number;
+  likedIps: string[];
+  dislikeCount: number;
+  dislikedIps: string[];
   isFeatured: boolean;
   status: 'draft' | 'published' | 'archived';
   publishedAt?: Date;
@@ -73,9 +77,25 @@ const articleSchema = new Schema<IArticle>(
       type: Number,
       default: 0,
     },
+    viewedIps: {
+      type: [String],
+      default: [],
+    },
     likeCount: {
       type: Number,
       default: 0,
+    },
+    likedIps: {
+      type: [String],
+      default: [],
+    },
+    dislikeCount: {
+      type: Number,
+      default: 0,
+    },
+    dislikedIps: {
+      type: [String],
+      default: [],
     },
     isFeatured: {
       type: Boolean,

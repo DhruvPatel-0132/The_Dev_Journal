@@ -303,17 +303,22 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <span
-                    className={`mt-3 md:mt-0 px-3 py-1 rounded-full text-sm whitespace-nowrap ${
-                      article.status === "published"
-                        ? "bg-green-500/15 text-green-400"
-                        : article.status === "draft"
-                        ? "bg-yellow-500/15 text-yellow-400"
-                        : "bg-gray-500/15 text-gray-400"
-                    }`}
-                  >
-                    {article.status.charAt(0).toUpperCase() + article.status.slice(1)}
-                  </span>
+                  <div className="flex items-center mt-3 md:mt-0">
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm whitespace-nowrap ${
+                        article.status === "published"
+                          ? "bg-green-500/15 text-green-400"
+                          : article.status === "draft"
+                          ? "bg-yellow-500/15 text-yellow-400"
+                          : "bg-gray-500/15 text-gray-400"
+                      }`}
+                    >
+                      {article.status.charAt(0).toUpperCase() + article.status.slice(1)}
+                    </span>
+                    <Link href={`/edit-blog/${article.seoSlug}`} className="ml-3 px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-sm whitespace-nowrap transition-colors flex items-center gap-2">
+                      <PenSquare size={14} /> Edit
+                    </Link>
+                  </div>
                 </motion.div>
               ))}
             </div>

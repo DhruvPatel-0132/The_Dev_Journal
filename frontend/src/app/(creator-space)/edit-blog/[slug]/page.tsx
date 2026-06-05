@@ -7,11 +7,14 @@ import TipTapEditor from "@/components/editor/TipTapEditor"
 import { Image as ImageIcon, Send, Save, ArrowLeft, X, Settings, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { articleApi, uploadApi } from "@/lib/api"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 
-function CreateBlogPage() {
+function EditBlogPage() {
     const router = useRouter()
+    const params = useParams()
+    const slug = params.slug as string
     const [isLoading, setIsLoading] = useState(false)
+    const [isFetching, setIsFetching] = useState(true)
     const [error, setError] = useState("")
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -33,19 +36,26 @@ function CreateBlogPage() {
     const [seoKeywords, setSeoKeywords] = useState<string[]>([])
     const [keywordInput, setKeywordInput] = useState("")
 
-    // Auto-generate slug from title
+    // Fetch existing article
     useEffect(() => {
-        if (title) {
-            const generatedSlug = title
-                .toLowerCase()
-                .trim()
-                .replace(/[^a-z0-9]+/g, '-')
-                .replace(/(^-|-$)+/g, '');
-            setSeoSlug(generatedSlug);
-        } else {
-            setSeoSlug("");
+        if (slug) {
+            articleApi.getArticleForEdit(slug).then(res => {
+                const a = res.article;
+                setTitle(a.title || "");
+                setContent(a.content || "");
+                setCoverImage(a.bannerImage?.url || "");
+                setSeoSlug(a.seoSlug || "");
+                setSummary(a.summary || "");
+                setCategory(a.category || "");
+                setTags(a.tags || []);
+                setSeoKeywords(a.seoKeywords || []);
+            }).catch(err => {
+                setError("Failed to load article details");
+            }).finally(() => {
+                setIsFetching(false);
+            });
         }
-    }, [title])
+    }, [slug]);
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -79,7 +89,7 @@ function CreateBlogPage() {
                 status
             }
             console.log(`Saving as ${status}:`, articleData)
-            await articleApi.create(articleData)
+            await articleApi.update(slug, articleData)
             
             // Redirect after successful save
             router.push('/dashboard')
@@ -189,7 +199,13 @@ function CreateBlogPage() {
 
                     {/* Tiptap Editor */}
                     <div className="flex-1 min-h-[500px]">
-                        <TipTapEditor content={content} onChange={setContent} />
+                        {isFetching ? (
+                            <div className="flex items-center justify-center h-full text-white/50">
+                                <Loader2 size={32} className="animate-spin" />
+                            </div>
+                        ) : (
+                            <TipTapEditor content={content} onChange={setContent} />
+                        )}
                     </div>
                 </div>
 
@@ -293,4 +309,4 @@ function CreateBlogPage() {
     )
 }
 
-export default CreateBlogPage
+export default EditBlogPage

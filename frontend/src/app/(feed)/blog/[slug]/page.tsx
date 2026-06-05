@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, Calendar, Clock, Loader2, Share2, Heart, Eye } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, Loader2, Share2, Heart, Eye, ThumbsDown } from "lucide-react";
 import BackgroundGlow from "@/components/common/BackgroundGlow";
 import GridPattern from "@/components/common/GridPattern";
 import BlogNavbar from "@/components/layout/BlogNavbar";
@@ -19,6 +19,9 @@ export default function ArticlePage() {
   const [article, setArticle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [likeCount, setLikeCount] = useState(0);
+  const [dislikeCount, setDislikeCount] = useState(0);
+  const [userAction, setUserAction] = useState<'liked' | 'disliked' | 'none'>('none');
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -26,6 +29,9 @@ export default function ArticlePage() {
         setLoading(true);
         const res = await articleApi.getArticleBySlug(slug);
         setArticle(res.article);
+        setLikeCount(res.article.likeCount || 0);
+        setDislikeCount(res.article.dislikeCount || 0);
+        setUserAction(res.article.userAction || 'none');
       } catch (err: any) {
         setError(err.message || "Failed to load article");
       } finally {
@@ -34,6 +40,48 @@ export default function ArticlePage() {
     };
     if (slug) fetchArticle();
   }, [slug]);
+
+  const handleLike = async () => {
+    try {
+      const prevAction = userAction;
+      if (prevAction === 'liked') {
+        setUserAction('none');
+        setLikeCount(prev => Math.max(0, prev - 1));
+      } else {
+        setUserAction('liked');
+        setLikeCount(prev => prev + 1);
+        if (prevAction === 'disliked') setDislikeCount(prev => Math.max(0, prev - 1));
+      }
+      
+      const res = await articleApi.toggleLike(slug);
+      setLikeCount(res.likeCount);
+      setDislikeCount(res.dislikeCount);
+      setUserAction(res.userAction);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleDislike = async () => {
+    try {
+      const prevAction = userAction;
+      if (prevAction === 'disliked') {
+        setUserAction('none');
+        setDislikeCount(prev => Math.max(0, prev - 1));
+      } else {
+        setUserAction('disliked');
+        setDislikeCount(prev => prev + 1);
+        if (prevAction === 'liked') setLikeCount(prev => Math.max(0, prev - 1));
+      }
+      
+      const res = await articleApi.toggleDislike(slug);
+      setLikeCount(res.likeCount);
+      setDislikeCount(res.dislikeCount);
+      setUserAction(res.userAction);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -127,11 +175,11 @@ export default function ArticlePage() {
           >
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-lg font-bold">
-                {article.author?.firstName?.[0] || 'A'}
+                {article.author?.name?.[0] || 'A'}
               </div>
               <div className="text-left">
-                <p className="font-medium text-white">{article.author?.firstName} {article.author?.lastName}</p>
-                <p className="text-sm text-zinc-400">{article.author?.role === 'company' ? 'Company' : 'Author'}</p>
+                <p className="font-medium text-white">{article.author?.name}</p>
+                <p className="text-sm text-zinc-400">{article.author?.role === 'creator' ? 'Author' : 'Author'}</p>
               </div>
             </div>
 
@@ -141,8 +189,18 @@ export default function ArticlePage() {
                 <span className="text-sm">{article.viewCount || 0}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Heart className="w-5 h-5 hover:text-rose-400 cursor-pointer transition-colors" />
-                <span className="text-sm">{article.likeCount || 0}</span>
+                <Heart 
+                  onClick={handleLike}
+                  className={`w-5 h-5 cursor-pointer transition-colors ${userAction === 'liked' ? 'text-rose-500 fill-rose-500' : 'hover:text-rose-400'}`} 
+                />
+                <span className="text-sm">{likeCount}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <ThumbsDown 
+                  onClick={handleDislike}
+                  className={`w-5 h-5 cursor-pointer transition-colors ${userAction === 'disliked' ? 'text-indigo-400 fill-indigo-400' : 'hover:text-indigo-400'}`} 
+                />
+                <span className="text-sm">{dislikeCount}</span>
               </div>
               <button className="p-2 hover:bg-white/5 rounded-full transition-colors group">
                 <Share2 className="w-5 h-5 group-hover:text-white" />
@@ -157,7 +215,7 @@ export default function ArticlePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="relative w-full aspect-[2/1] mb-16 rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
+            className="relative w-full aspect-[4/1] mb-16 rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
           >
             <Image 
               src={article.bannerImage.url} 

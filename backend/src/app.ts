@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 
 import authRoutes from "./routes/auth.routes";
 import articleRoutes from "./routes/article.routes";
+import uploadRoutes from "./routes/upload.routes";
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.get("/", (_, res) => {
 /* Routes */
 app.use("/api/auth", authRoutes);
 app.use("/api/articles", articleRoutes);
+app.use("/api/upload", uploadRoutes);
 
 /* 404 — only reached when no route above matched */
 app.use((_req, res) => {

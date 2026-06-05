@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import { createArticleSchema } from "../validators/article.validator";
+import { createArticleSchema, updateArticleSchema } from "../validators/article.validator";
 import * as articleService from "../services/article.service";
 import { AppError } from "../utils/AppError";
 
@@ -85,6 +85,32 @@ export const createArticle = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+// ─── Update Article ──────────────────────────
+export const updateArticle = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const validatedData = updateArticleSchema.parse(req.body);
+    const { slug } = req.params;
+    
+    // @ts-ignore - user is attached by the protectRoute middleware
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Not authorized" });
+      return;
+    }
+
+    const article = await articleService.updateArticle(slug as string, userId, validatedData);
+
+    res.status(200).json({
+      success: true,
+      message: "Article updated successfully",
+      article,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to update article");
+  }
+};
+
 // ─── All Published Articles ──────────────────
 export const getAllArticles = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -105,11 +131,58 @@ export const getAllArticles = async (req: Request, res: Response): Promise<void>
 export const getArticleBySlug = async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
-    const article = await articleService.getArticleBySlug(slug as string);
+    const ip = req.ip || req.socket.remoteAddress || '';
+    const article = await articleService.getArticleBySlug(slug as string, ip);
 
     res.status(200).json({ success: true, article });
   } catch (error) {
     handleError(res, error, "Failed to fetch article");
+  }
+};
+
+// ─── Get Article For Edit ────────────────────
+export const getArticleForEdit = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    
+    // @ts-ignore
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Not authorized" });
+      return;
+    }
+
+    const article = await articleService.getArticleForEdit(slug as string, userId);
+
+    res.status(200).json({ success: true, article });
+  } catch (error) {
+    handleError(res, error, "Failed to fetch article for edit");
+  }
+};
+
+// ─── Toggle Like Article ─────────────────────
+export const toggleLikeArticle = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    const ip = req.ip || req.socket.remoteAddress || '';
+    const result = await articleService.toggleLikeArticle(slug as string, ip);
+
+    res.status(200).json({ success: true, ...result });
+  } catch (error) {
+    handleError(res, error, "Failed to toggle like");
+  }
+};
+
+// ─── Toggle Dislike Article ──────────────────
+export const toggleDislikeArticle = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    const ip = req.ip || req.socket.remoteAddress || '';
+    const result = await articleService.toggleDislikeArticle(slug as string, ip);
+
+    res.status(200).json({ success: true, ...result });
+  } catch (error) {
+    handleError(res, error, "Failed to toggle dislike");
   }
 };
 
