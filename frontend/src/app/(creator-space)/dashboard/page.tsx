@@ -15,6 +15,8 @@ import {
   Archive,
   X,
   TriangleAlert,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -208,6 +210,7 @@ export default function DashboardPage() {
   });
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [togglingSlug, setTogglingSlug] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -282,6 +285,35 @@ export default function DashboardPage() {
       setActionError(err.message || "Something went wrong");
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  // ── Toggle Status (published <-> draft) ─────
+  const handleToggleStatus = async (article: Article) => {
+    const newStatus = article.status === 'published' ? 'draft' : 'published';
+    setTogglingSlug(article.seoSlug);
+    setActionError("");
+    try {
+      await articleApi.update(article.seoSlug, { status: newStatus });
+      setArticles((prev) =>
+        prev.map((a) =>
+          a.seoSlug === article.seoSlug
+            ? { ...a, status: newStatus, publishedAt: newStatus === 'published' ? new Date().toISOString() : a.publishedAt }
+            : a
+        )
+      );
+      setStats((prev) => {
+        if (!prev) return prev;
+        if (newStatus === 'published') {
+          return { ...prev, publishedArticles: prev.publishedArticles + 1, draftArticles: Math.max(0, prev.draftArticles - 1) };
+        } else {
+          return { ...prev, publishedArticles: Math.max(0, prev.publishedArticles - 1), draftArticles: prev.draftArticles + 1 };
+        }
+      });
+    } catch (err: any) {
+      setActionError(err.message || "Failed to toggle status");
+    } finally {
+      setTogglingSlug(null);
     }
   };
 
@@ -520,6 +552,28 @@ export default function DashboardPage() {
                         >
                           {article.status.charAt(0).toUpperCase() + article.status.slice(1)}
                         </span>
+
+                        {/* Status toggle (published <-> draft) */}
+                        {article.status !== "archived" && (
+                          <button
+                            onClick={() => handleToggleStatus(article)}
+                            disabled={togglingSlug === article.seoSlug}
+                            title={article.status === 'published' ? 'Unpublish (revert to draft)' : 'Publish this article'}
+                            className={`w-8 h-8 flex items-center justify-center rounded-full transition disabled:opacity-50 ${
+                              article.status === 'published'
+                                ? 'text-green-400/70 hover:text-yellow-400 hover:bg-yellow-500/10'
+                                : 'text-yellow-400/70 hover:text-green-400 hover:bg-green-500/10'
+                            }`}
+                          >
+                            {togglingSlug === article.seoSlug ? (
+                              <Loader2 size={15} className="animate-spin" />
+                            ) : article.status === 'published' ? (
+                              <ToggleRight size={17} />
+                            ) : (
+                              <ToggleLeft size={17} />
+                            )}
+                          </button>
+                        )}
 
                         {/* Edit */}
                         <Link

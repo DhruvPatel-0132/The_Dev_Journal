@@ -318,7 +318,21 @@ export const uploadApi = {
     const result = await res.json();
     if (!res.ok) throw new Error(result.message);
     return result;
-  }
+  },
+
+  uploadInlineImage: async (file: File) => {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const res = await fetch(`${API_URL}/upload/inline-image`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
 };
 
 export const verifyAndRefreshToken = async () => {

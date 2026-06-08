@@ -1,3 +1,4 @@
+import { useRef, useState } from "react"
 import { type Editor } from "@tiptap/react"
 import {
   Bold,
@@ -10,13 +11,19 @@ import {
   Quote,
   Code,
   Link as LinkIcon,
+  ImagePlus,
+  Loader2,
 } from "lucide-react"
+import { uploadApi } from "@/lib/api"
 
 interface EditorToolbarProps {
   editor: Editor | null
 }
 
 const EditorToolbar = ({ editor }: EditorToolbarProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+
   if (!editor) {
     return null
   }
@@ -35,6 +42,28 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
     }
 
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run()
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !editor) return
+
+    try {
+      setUploading(true)
+      const result = await uploadApi.uploadInlineImage(file)
+      editor
+        .chain()
+        .focus()
+        .setImage({ src: result.url, alt: file.name.replace(/\.[^.]+$/, '') })
+        .run()
+    } catch (err) {
+      console.error("Failed to upload inline image:", err)
+      alert("Failed to upload image. Please try again.")
+    } finally {
+      setUploading(false)
+      // Reset file input so the same file can be uploaded again
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
   }
 
   return (
@@ -160,6 +189,30 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
         title="Link"
       >
         <LinkIcon className="w-4 h-4" />
+      </button>
+
+      <div className="w-px h-6 bg-white/10 mx-1" />
+
+      {/* Inline Image Upload */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="image/*"
+        onChange={handleImageUpload}
+      />
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={uploading}
+        className={`p-2 rounded-md hover:bg-white/10 transition-colors text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+        title="Insert Image"
+      >
+        {uploading ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <ImagePlus className="w-4 h-4" />
+        )}
       </button>
     </div>
   )
