@@ -186,3 +186,47 @@ export const toggleDislikeArticle = async (req: Request, res: Response): Promise
   }
 };
 
+// ─── Delete Article ──────────────────────────
+export const deleteArticle = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+
+    // @ts-ignore
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Not authorized" });
+      return;
+    }
+
+    await articleService.deleteArticle(slug as string, userId);
+
+    res.status(200).json({ success: true, message: "Article deleted successfully" });
+  } catch (error) {
+    handleError(res, error, "Failed to delete article");
+  }
+};
+
+// ─── Archive Article ─────────────────────────
+export const archiveArticle = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+
+    // @ts-ignore
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Not authorized" });
+      return;
+    }
+
+    const article = await articleService.archiveArticle(slug as string, userId);
+
+    res.status(200).json({
+      success: true,
+      message: "Article archived successfully",
+      article,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to archive article");
+  }
+};
+

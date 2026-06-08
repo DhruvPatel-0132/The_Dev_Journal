@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
 import AuthCard from "../_components/AuthCard";
@@ -81,9 +82,11 @@ export default function SelectRolePage() {
 
         {/* User Info from Google */}
         <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
-          <img
+          <Image
             src={googleData.user.avatar}
             alt={googleData.user.name}
+            width={48}
+            height={48}
             className="w-12 h-12 rounded-full border border-white/20 object-cover"
             referrerPolicy="no-referrer"
           />

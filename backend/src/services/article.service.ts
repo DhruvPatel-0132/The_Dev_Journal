@@ -324,3 +324,39 @@ export const toggleDislikeArticle = async (slug: string, ip: string) => {
   await article.save();
   return { likeCount: article.likeCount, dislikeCount: article.dislikeCount, userAction: article.dislikedIps.includes(ip) ? 'disliked' : 'none' };
 };
+
+// ─── Delete Article ──────────────────────────
+export const deleteArticle = async (slug: string, userId: string): Promise<void> => {
+  const article = await Article.findOne({ seoSlug: slug });
+
+  if (!article) {
+    throw new AppError("Article not found", 404);
+  }
+
+  if (article.author.toString() !== userId) {
+    throw new AppError("Not authorized to delete this article", 403);
+  }
+
+  await article.deleteOne();
+};
+
+// ─── Archive Article ─────────────────────────
+export const archiveArticle = async (slug: string, userId: string): Promise<IArticle> => {
+  const article = await Article.findOne({ seoSlug: slug });
+
+  if (!article) {
+    throw new AppError("Article not found", 404);
+  }
+
+  if (article.author.toString() !== userId) {
+    throw new AppError("Not authorized to archive this article", 403);
+  }
+
+  if (article.status === "archived") {
+    throw new AppError("Article is already archived", 400);
+  }
+
+  article.status = "archived";
+  await article.save();
+  return article;
+};

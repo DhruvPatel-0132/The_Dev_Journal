@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowRight, User } from "lucide-react";
@@ -83,23 +84,30 @@ export default function BlogNavbar() {
 
           {user ? (
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 px-4 py-2 rounded-xl backdrop-blur-xl">
+              <Link
+                href="/profile"
+                className="group flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-violet-500/40 px-4 py-2 rounded-xl backdrop-blur-xl transition-all duration-200 cursor-pointer"
+                title="View your profile"
+              >
                 {user.avatar ? (
-                  <img
+                  <Image
                     src={user.avatar}
                     alt={user.name}
-                    className="w-8 h-8 rounded-full object-cover"
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 rounded-full object-cover ring-2 ring-transparent group-hover:ring-violet-500/50 transition-all duration-200 group-hover:scale-110"
+                    unoptimized={!user.avatar.includes("googleusercontent.com") && !user.avatar.includes("cloudinary.com")}
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
+                  <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30 group-hover:border-violet-500/50 group-hover:scale-110 transition-all duration-200">
                     <User className="w-4 h-4 text-indigo-400" />
                   </div>
                 )}
 
-                <span className="text-sm font-medium text-zinc-200">
+                <span className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors duration-200">
                   {user.name}
                 </span>
-              </div>
+              </Link>
 
               <button
                 onClick={handleLogout}

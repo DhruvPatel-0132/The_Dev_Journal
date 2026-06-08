@@ -178,7 +178,14 @@ export const articleApi = {
       body: JSON.stringify(data),
     });
     const result = await res.json();
-    if (!res.ok) throw new Error(result.message);
+    if (!res.ok) {
+      // Surface the first Zod issue detail if present
+      const msg =
+        result.issues?.[0]?.message ||
+        result.message ||
+        "Failed to save article";
+      throw new Error(msg);
+    }
     return result;
   },
 
@@ -256,6 +263,26 @@ export const articleApi = {
 
   toggleDislike: async (slug: string) => {
     const res = await fetch(`${API_URL}/articles/slug/${slug}/dislike`, { method: "POST" });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+
+  deleteArticle: async (slug: string) => {
+    const res = await fetch(`${API_URL}/articles/slug/${slug}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+
+  archiveArticle: async (slug: string) => {
+    const res = await fetch(`${API_URL}/articles/slug/${slug}/archive`, {
+      method: "PATCH",
+      credentials: "include",
+    });
     const result = await res.json();
     if (!res.ok) throw new Error(result.message);
     return result;

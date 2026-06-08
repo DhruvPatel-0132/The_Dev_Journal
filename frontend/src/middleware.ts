@@ -4,7 +4,27 @@ import { jwtDecode } from 'jwt-decode';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
-async function tryRefreshToken(request: NextRequest): Promise<{ accessToken: string; response: NextResponse } | null> {
+// ─── Route Groups ──────────────────────────────────────────────────────────
+// Routes only unauthenticated users can visit (logged-in users are redirected home)
+const AUTH_ROUTES = [
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-otp',
+  '/select-role',
+];
+
+// Routes that require a CREATOR account
+const CREATOR_ROUTES = ['/dashboard', '/create-blog', '/edit-blog'];
+
+// Routes that require any authenticated user
+const PROTECTED_ROUTES = ['/blog', '/profile'];
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+async function tryRefreshToken(
+  request: NextRequest
+): Promise<{ accessToken: string; response: NextResponse } | null> {
   const refreshToken = request.cookies.get('refreshToken')?.value;
   if (!refreshToken) return null;
 
@@ -13,7 +33,7 @@ async function tryRefreshToken(request: NextRequest): Promise<{ accessToken: str
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Cookie': `refreshToken=${refreshToken}`,
+        Cookie: `refreshToken=${refreshToken}`,
       },
     });
 
@@ -22,10 +42,7 @@ async function tryRefreshToken(request: NextRequest): Promise<{ accessToken: str
     const data = await res.json();
     if (!data.token) return null;
 
-    // Build a NextResponse that forwards the Set-Cookie headers from the backend
     const response = NextResponse.next();
-
-    // Forward all Set-Cookie headers from the backend refresh response
     const setCookieHeaders = res.headers.getSetCookie();
     for (const cookie of setCookieHeaders) {
       response.headers.append('Set-Cookie', cookie);
@@ -37,70 +54,98 @@ async function tryRefreshToken(request: NextRequest): Promise<{ accessToken: str
   }
 }
 
-function isTokenValid(token: string): { valid: boolean; role?: string } {
+function decodeToken(token: string): { valid: boolean; role?: string } {
   try {
     const decoded: any = jwtDecode(token);
-    const currentTime = Date.now() / 1000;
-
-    // Token is expired
-    if (decoded.exp && decoded.exp < currentTime) {
-      return { valid: false };
-    }
-
+    const now = Date.now() / 1000;
+    if (decoded.exp && decoded.exp < now) return { valid: false };
     return { valid: true, role: decoded.role };
   } catch {
     return { valid: false };
   }
 }
 
+// ─── Middleware ────────────────────────────────────────────────────────────
 export async function middleware(request: NextRequest) {
-  const isCreateBlogPage = request.nextUrl.pathname.startsWith('/create-blog');
-  const isDashboardPage = request.nextUrl.pathname.startsWith('/dashboard');
-  const isBlogPage = request.nextUrl.pathname.startsWith('/blog');
+  const { pathname } = request.nextUrl;
 
-  // Only protect these routes
-  if (!isCreateBlogPage && !isDashboardPage && !isBlogPage) {
+  const isAuthRoute = AUTH_ROUTES.some((r) => pathname.startsWith(r));
+  const isCreatorRoute = CREATOR_ROUTES.some((r) => pathname.startsWith(r));
+  const isProtectedRoute = PROTECTED_ROUTES.some((r) => pathname.startsWith(r));
+
+  // Nothing to guard
+  if (!isAuthRoute && !isCreatorRoute && !isProtectedRoute) {
     return NextResponse.next();
   }
 
+  // Resolve token (with refresh fallback)
   let token = request.cookies.get('accessToken')?.value;
-  let customResponse: NextResponse | null = null;
+  let refreshedResponse: NextResponse | null = null;
 
-  // If no token or token is expired, try to refresh
-  if (!token || !isTokenValid(token).valid) {
+  if (!token || !decodeToken(token).valid) {
     const refreshResult = await tryRefreshToken(request);
     if (refreshResult) {
       token = refreshResult.accessToken;
-      customResponse = refreshResult.response;
+      refreshedResponse = refreshResult.response;
     } else {
-      // No refresh token or refresh failed — redirect to login
-      // But only for create-blog (dashboard and blog can show login prompt client-side)
-      if (isCreateBlogPage) {
-        return NextResponse.redirect(new URL('/login', request.url));
-      }
-      return NextResponse.next();
+      token = undefined;
     }
   }
 
-  const { valid, role } = isTokenValid(token);
+  const { valid, role } = token ? decodeToken(token) : { valid: false, role: undefined };
+  const isLoggedIn = valid;
 
-  if (!valid) {
-    if (isCreateBlogPage) {
-      return NextResponse.redirect(new URL('/login', request.url));
+  // ── Auth routes: redirect logged-in users to home ──────────────────────
+  if (isAuthRoute) {
+    if (isLoggedIn) {
+      return NextResponse.redirect(new URL('/', request.url));
     }
     return NextResponse.next();
   }
 
-  // Block visitors from create-blog
-  if (isCreateBlogPage && role === 'visitor') {
-    return NextResponse.redirect(new URL('/', request.url));
+  // ── Creator routes: must be logged-in AND a creator ───────────────────
+  if (isCreatorRoute) {
+    if (!isLoggedIn) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('from', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    if (role !== 'creator') {
+      // Visitor trying to reach creator space → send home
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+    return refreshedResponse || NextResponse.next();
   }
 
-  // If we refreshed the token, return the response with updated cookies
-  return customResponse || NextResponse.next();
+  // ── Protected routes: must be logged in (any role) ────────────────────
+  if (isProtectedRoute) {
+    if (!isLoggedIn) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('from', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    return refreshedResponse || NextResponse.next();
+  }
+
+  return NextResponse.next();
 }
 
 // Matching Paths for the middleware
 export const config = {
-  matcher: ['/create-blog/:path*', '/dashboard/:path*', '/blog/:path*'],
+  matcher: [
+    // Auth pages
+    '/login/:path*',
+    '/register/:path*',
+    '/forgot-password/:path*',
+    '/reset-password/:path*',
+    '/verify-otp/:path*',
+    '/select-role/:path*',
+    // Creator-only pages
+    '/dashboard/:path*',
+    '/create-blog/:path*',
+    '/edit-blog/:path*',
+    // General protected pages
+    '/blog/:path*',
+    '/profile/:path*',
+  ],
 };

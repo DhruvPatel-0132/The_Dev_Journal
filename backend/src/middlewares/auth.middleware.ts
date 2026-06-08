@@ -23,3 +23,26 @@ export const protectRoute = (
     res.status(401).json({ success: false, message: "Not authorized, token failed" });
   }
 };
+
+/**
+ * Must be used AFTER `protectRoute`.
+ * Rejects authenticated users who are not creators (role !== "creator").
+ */
+export const creatorOnly = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  // @ts-ignore
+  const role = req.user?.role;
+
+  if (role !== "creator") {
+    res.status(403).json({
+      success: false,
+      message: "Access denied. This action requires a creator account.",
+    });
+    return;
+  }
+
+  next();
+};

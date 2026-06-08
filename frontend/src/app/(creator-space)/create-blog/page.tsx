@@ -64,24 +64,42 @@ function CreateBlogPage() {
     }
 
     const handlePublish = async (status: 'published' | 'draft') => {
-        setIsLoading(true)
         setError("")
+
+        // ── Client-side validation ──────────────────────
+        if (!title.trim()) {
+            setError("Title is required.")
+            return
+        }
+        // Strip HTML tags to check if the editor content is actually empty
+        const plainContent = content.replace(/<[^>]*>/g, "").trim()
+        if (!plainContent) {
+            setError("Content cannot be empty. Write something first!")
+            return
+        }
+        if (!summary.trim()) {
+            setError("Summary is required. Add a brief description in the sidebar.")
+            return
+        }
+        if (!category.trim()) {
+            setError("Category is required. Add a category in the sidebar.")
+            return
+        }
+
+        setIsLoading(true)
         try {
             const articleData = {
-                title,
+                title: title.trim(),
                 seoSlug,
-                bannerImage: coverImage ? { url: coverImage, publicId: "" } : undefined, // Adjust based on your upload logic
+                bannerImage: coverImage ? { url: coverImage, publicId: "" } : undefined,
                 content,
-                summary,
-                category,
+                summary: summary.trim(),
+                category: category.trim(),
                 tags,
                 seoKeywords,
-                status
+                status,
             }
-            console.log(`Saving as ${status}:`, articleData)
             await articleApi.create(articleData)
-            
-            // Redirect after successful save
             router.push('/dashboard')
         } catch (err: any) {
             console.error("Failed to save article:", err)
