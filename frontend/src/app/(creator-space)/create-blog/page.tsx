@@ -47,6 +47,34 @@ function CreateBlogPage() {
         }
     }, [title])
 
+    // Load from local storage on mount
+    useEffect(() => {
+        const savedDraft = localStorage.getItem("draft-create-blog")
+        if (savedDraft) {
+            try {
+                const parsed = JSON.parse(savedDraft)
+                if (parsed.title) setTitle(parsed.title)
+                if (parsed.content) setContent(parsed.content)
+                if (parsed.coverImage) setCoverImage(parsed.coverImage)
+                if (parsed.summary) setSummary(parsed.summary)
+                if (parsed.category) setCategory(parsed.category)
+                if (parsed.tags) setTags(parsed.tags)
+                if (parsed.seoKeywords) setSeoKeywords(parsed.seoKeywords)
+            } catch (err) {
+                console.error("Failed to parse draft from local storage", err)
+            }
+        }
+    }, [])
+
+    // Save to local storage when fields change
+    useEffect(() => {
+        const draft = { title, content, coverImage, summary, category, tags, seoKeywords }
+        // Only save if there's actually some content
+        if (title || content || summary || category || tags.length > 0 || seoKeywords.length > 0) {
+            localStorage.setItem("draft-create-blog", JSON.stringify(draft))
+        }
+    }, [title, content, coverImage, summary, category, tags, seoKeywords])
+
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             try {
@@ -100,6 +128,7 @@ function CreateBlogPage() {
                 status,
             }
             await articleApi.create(articleData)
+            localStorage.removeItem("draft-create-blog")
             router.push('/dashboard')
         } catch (err: any) {
             console.error("Failed to save article:", err)

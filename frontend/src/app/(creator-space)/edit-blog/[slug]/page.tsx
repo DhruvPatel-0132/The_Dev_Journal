@@ -41,14 +41,25 @@ function EditBlogPage() {
         if (slug) {
             articleApi.getArticleForEdit(slug).then(res => {
                 const a = res.article;
-                setTitle(a.title || "");
-                setContent(a.content || "");
-                setCoverImage(a.bannerImage?.url || "");
-                setSeoSlug(a.seoSlug || "");
-                setSummary(a.summary || "");
-                setCategory(a.category || "");
-                setTags(a.tags || []);
-                setSeoKeywords(a.seoKeywords || []);
+
+                const savedDraft = localStorage.getItem(`draft-edit-blog-${slug}`)
+                let parsedDraft = null
+                if (savedDraft) {
+                    try {
+                        parsedDraft = JSON.parse(savedDraft)
+                    } catch (err) {
+                        console.error("Failed to parse draft from local storage", err)
+                    }
+                }
+
+                setTitle(parsedDraft?.title !== undefined ? parsedDraft.title : (a.title || ""));
+                setContent(parsedDraft?.content !== undefined ? parsedDraft.content : (a.content || ""));
+                setCoverImage(parsedDraft?.coverImage !== undefined ? parsedDraft.coverImage : (a.bannerImage?.url || ""));
+                setSeoSlug(parsedDraft?.seoSlug !== undefined ? parsedDraft.seoSlug : (a.seoSlug || ""));
+                setSummary(parsedDraft?.summary !== undefined ? parsedDraft.summary : (a.summary || ""));
+                setCategory(parsedDraft?.category !== undefined ? parsedDraft.category : (a.category || ""));
+                setTags(parsedDraft?.tags !== undefined ? parsedDraft.tags : (a.tags || []));
+                setSeoKeywords(parsedDraft?.seoKeywords !== undefined ? parsedDraft.seoKeywords : (a.seoKeywords || []));
             }).catch(err => {
                 setError("Failed to load article details");
             }).finally(() => {
@@ -56,6 +67,13 @@ function EditBlogPage() {
             });
         }
     }, [slug]);
+
+    // Save to local storage when fields change (after initial fetch)
+    useEffect(() => {
+        if (isFetching) return;
+        const draft = { title, content, coverImage, seoSlug, summary, category, tags, seoKeywords }
+        localStorage.setItem(`draft-edit-blog-${slug}`, JSON.stringify(draft))
+    }, [title, content, coverImage, seoSlug, summary, category, tags, seoKeywords, slug, isFetching])
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -90,6 +108,7 @@ function EditBlogPage() {
             }
             console.log(`Saving as ${status}:`, articleData)
             await articleApi.update(slug, articleData)
+            localStorage.removeItem(`draft-edit-blog-${slug}`)
             
             // Redirect after successful save
             router.push('/dashboard')

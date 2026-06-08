@@ -7,7 +7,7 @@ import BackgroundGlow from "@/components/common/BackgroundGlow";
 import GridPattern from "@/components/common/GridPattern";
 import BlogNavbar from "@/components/layout/BlogNavbar";
 import Link from "next/link";
-import { articleApi } from "@/lib/api";
+import { useArticles, useCategories, useTags } from "@/hooks/useArticles";
 
 const POSTS_PER_PAGE = 6;
 
@@ -17,58 +17,28 @@ export default function BlogsPage() {
   const [selectedTag, setSelectedTag] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   
-  const [blogs, setBlogs] = useState<any[]>([]);
-  const [categories, setCategories] = useState<{name: string; count: number}[]>([]);
-  const [tags, setTags] = useState<{name: string; count: number}[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [totalCount, setTotalCount] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const { data: catRes } = useCategories();
+  const categories = catRes?.categories || [];
 
-  useEffect(() => {
-    const fetchFilters = async () => {
-      try {
-        const [catRes, tagRes] = await Promise.all([
-          articleApi.getCategories(),
-          articleApi.getTags()
-        ]);
-        setCategories(catRes.categories || []);
-        setTags(tagRes.tags || []);
-      } catch (err: any) {
-        console.error("Failed to fetch filters:", err);
-        setError(err?.message || "Failed to load categories and tags.");
-      }
-    };
-    fetchFilters();
-  }, []);
+  const { data: tagRes } = useTags();
+  const tags = tagRes?.tags || [];
 
-  useEffect(() => {
-    const fetchBlogs = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await articleApi.getAllArticles({
-          page: currentPage,
-          limit: POSTS_PER_PAGE,
-          search: searchQuery || undefined,
-          category: selectedCategory || undefined,
-          tag: selectedTag || undefined,
-        });
-        setBlogs(res.articles || []);
-        setTotalCount(res.pagination?.total || 0);
-      } catch (err: any) {
-        console.error("Failed to fetch blogs:", err);
-        setError(err?.message || "Failed to load articles. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const { 
+    data: articlesRes, 
+    isLoading: loading, 
+    isError, 
+    error,
+    refetch 
+  } = useArticles({
+    page: currentPage,
+    limit: POSTS_PER_PAGE,
+    search: searchQuery || undefined,
+    category: selectedCategory || undefined,
+    tag: selectedTag || undefined,
+  });
 
-    const timeoutId = setTimeout(() => {
-      fetchBlogs();
-    }, 300); // debounce search
-
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery, selectedCategory, selectedTag, currentPage]);
+  const blogs = articlesRes?.articles || [];
+  const totalCount = articlesRes?.pagination?.total || 0;
 
   // Reset page when filters change
   useEffect(() => {
@@ -186,31 +156,16 @@ export default function BlogsPage() {
         </div>
 
         {/* Error Banner */}
-        {error && (
+        {isError && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-8 flex items-center gap-4 px-5 py-4 rounded-xl border border-red-500/30 bg-red-500/10 backdrop-blur-sm"
           >
             <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
-            <p className="text-red-300 text-sm flex-grow">{error}</p>
+            <p className="text-red-300 text-sm flex-grow">{(error as any)?.message || "An error occurred."}</p>
             <button
-              onClick={() => {
-                setError(null);
-                setLoading(true);
-                articleApi.getAllArticles({
-                  page: currentPage,
-                  limit: POSTS_PER_PAGE,
-                  search: searchQuery || undefined,
-                  category: selectedCategory || undefined,
-                  tag: selectedTag || undefined,
-                }).then(res => {
-                  setBlogs(res.articles || []);
-                  setTotalCount(res.pagination?.total || 0);
-                }).catch((err: any) => {
-                  setError(err?.message || "Failed to load articles. Please try again.");
-                }).finally(() => setLoading(false));
-              }}
+              onClick={() => refetch()}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-300 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 transition-all"
             >
               <RefreshCw className="w-3.5 h-3.5" />
@@ -228,7 +183,7 @@ export default function BlogsPage() {
             </div>
           )}
 
-          {loading && blogs.length === 0 && !error ? (
+          {loading && blogs.length === 0 && !isError ? (
             <div className="flex justify-center items-center py-20">
               <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
             </div>
@@ -273,7 +228,7 @@ export default function BlogsPage() {
                       </Link>
                     </motion.div>
                   ))
-                ) : !error ? (
+                ) : !isError ? (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}

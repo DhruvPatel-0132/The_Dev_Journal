@@ -23,7 +23,13 @@ import Link from "next/link";
 import BackgroundGlow from "@/components/common/BackgroundGlow";
 import GridPattern from "@/components/common/GridPattern";
 import BlogNavbar from "@/components/layout/BlogNavbar";
-import { articleApi } from "@/lib/api";
+import { 
+  useMyArticles, 
+  useDashboardStats, 
+  useDeleteArticle, 
+  useArchiveArticle, 
+  useUpdateArticle 
+} from "@/hooks/useArticles";
 
 interface DashboardStats {
   totalViews: number;
@@ -198,39 +204,26 @@ function ConfirmModal({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { data: statsRes, isLoading: statsLoading, isError: statsError, error: sError } = useDashboardStats();
+  const stats = statsRes?.stats;
+
+  const { data: articlesRes, isLoading: articlesLoading, isError: articlesError, error: aError } = useMyArticles({ limit: 5 });
+  const articles: Article[] = articlesRes?.articles || [];
+
+  const loading = statsLoading || articlesLoading;
+  const error = (statsError ? (sError as any)?.message : null) || (articlesError ? (aError as any)?.message : null);
+
+  const deleteMutation = useDeleteArticle();
+  const archiveMutation = useArchiveArticle();
+  const updateMutation = useUpdateArticle();
 
   const [modal, setModal] = useState<ModalState>({
     open: false,
     action: "delete",
     article: null,
   });
-  const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState("");
   const [togglingSlug, setTogglingSlug] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        setLoading(true);
-        setError("");
-        const [statsRes, articlesRes] = await Promise.all([
-          articleApi.getDashboardStats(),
-          articleApi.getMyArticles({ limit: 5 }),
-        ]);
-        setStats(statsRes.stats);
-        setArticles(articlesRes.articles);
-      } catch (err: any) {
-        setError(err.message || "Failed to load dashboard data");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDashboard();
-  }, []);
 
   // ── Open modal ──────────────────────────────
   const openModal = (action: ModalAction, article: Article) => {
@@ -239,52 +232,24 @@ export default function DashboardPage() {
   };
 
   const closeModal = () => {
-    if (actionLoading) return;
+    if (deleteMutation.isPending || archiveMutation.isPending) return;
     setModal((m) => ({ ...m, open: false }));
   };
 
   // ── Confirm action ──────────────────────────
   const handleConfirm = async () => {
     if (!modal.article) return;
-    setActionLoading(true);
     setActionError("");
 
     try {
       if (modal.action === "delete") {
-        await articleApi.deleteArticle(modal.article.seoSlug);
-        // Remove from list
-        setArticles((prev) => prev.filter((a) => a.seoSlug !== modal.article!.seoSlug));
-        // Decrement stats
-        setStats((prev) =>
-          prev
-            ? {
-                ...prev,
-                totalArticles: Math.max(0, prev.totalArticles - 1),
-                publishedArticles:
-                  modal.article!.status === "published"
-                    ? Math.max(0, prev.publishedArticles - 1)
-                    : prev.publishedArticles,
-                draftArticles:
-                  modal.article!.status === "draft"
-                    ? Math.max(0, prev.draftArticles - 1)
-                    : prev.draftArticles,
-              }
-            : prev
-        );
+        await deleteMutation.mutateAsync(modal.article.seoSlug);
       } else {
-        await articleApi.archiveArticle(modal.article.seoSlug);
-        // Update status in list
-        setArticles((prev) =>
-          prev.map((a) =>
-            a.seoSlug === modal.article!.seoSlug ? { ...a, status: "archived" } : a
-          )
-        );
+        await archiveMutation.mutateAsync(modal.article.seoSlug);
       }
       setModal((m) => ({ ...m, open: false }));
     } catch (err: any) {
       setActionError(err.message || "Something went wrong");
-    } finally {
-      setActionLoading(false);
     }
   };
 
@@ -294,22 +259,7 @@ export default function DashboardPage() {
     setTogglingSlug(article.seoSlug);
     setActionError("");
     try {
-      await articleApi.update(article.seoSlug, { status: newStatus });
-      setArticles((prev) =>
-        prev.map((a) =>
-          a.seoSlug === article.seoSlug
-            ? { ...a, status: newStatus, publishedAt: newStatus === 'published' ? new Date().toISOString() : a.publishedAt }
-            : a
-        )
-      );
-      setStats((prev) => {
-        if (!prev) return prev;
-        if (newStatus === 'published') {
-          return { ...prev, publishedArticles: prev.publishedArticles + 1, draftArticles: Math.max(0, prev.draftArticles - 1) };
-        } else {
-          return { ...prev, publishedArticles: Math.max(0, prev.publishedArticles - 1), draftArticles: prev.draftArticles + 1 };
-        }
-      });
+      await updateMutation.mutateAsync({ slug: article.seoSlug, data: { status: newStatus } });
     } catch (err: any) {
       setActionError(err.message || "Failed to toggle status");
     } finally {
@@ -330,7 +280,7 @@ export default function DashboardPage() {
     <>
       <ConfirmModal
         modal={modal}
-        loading={actionLoading}
+        loading={deleteMutation.isPending || archiveMutation.isPending}
         onConfirm={handleConfirm}
         onClose={closeModal}
       />
