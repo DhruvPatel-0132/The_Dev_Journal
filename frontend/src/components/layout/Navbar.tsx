@@ -8,6 +8,7 @@ import Logo from "./Logo";
 import { jwtDecode } from "jwt-decode";
 import { verifyAndRefreshToken } from "@/lib/api";
 import Cookies from "js-cookie";
+import { TokenPayload } from "@/types";
 
 export default function Navbar() {
   const router = useRouter();
@@ -20,9 +21,9 @@ export default function Navbar() {
       return;
     }
 
-    let decoded: any;
+    let decoded: TokenPayload | null = null;
     try {
-      decoded = jwtDecode(token);
+      decoded = jwtDecode<TokenPayload>(token);
     } catch (err) {
       console.error("Token decode error:", err);
       Cookies.remove("token");

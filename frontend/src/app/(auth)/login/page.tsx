@@ -10,6 +10,7 @@ import { authApi } from "@/lib/api";
 import { useGoogleLogin } from "@react-oauth/google";
 import GoogleIcon from "@/components/icons/GoogleIcon";
 import { useAuthStore } from "@/store/authStore";
+import { getErrorMessage } from "@/lib/utils";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -51,8 +52,8 @@ export default function LoginPage() {
       } else {
         setError("Login failed. No token received.");
       }
-    } catch (err: any) {
-      setError(err.message || "Invalid credentials");
+    } catch (err) {
+      setError(getErrorMessage(err) || "Failed to initiate login. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -75,8 +76,8 @@ export default function LoginPage() {
           sessionStorage.setItem("googleUser", JSON.stringify(data.user));
           router.push("/select-role");
         }
-      } catch (err: any) {
-        setError(err.message || "Google authentication failed");
+      } catch (err) {
+        setError(getErrorMessage(err) || "Failed to log in with Google.");
       } finally {
         setLoading(false);
       }

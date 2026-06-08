@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtDecode } from 'jwt-decode';
+import { TokenPayload } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -56,7 +57,7 @@ async function tryRefreshToken(
 
 function decodeToken(token: string): { valid: boolean; role?: string } {
   try {
-    const decoded: any = jwtDecode(token);
+    const decoded = jwtDecode<TokenPayload>(token);
     const now = Date.now() / 1000;
     if (decoded.exp && decoded.exp < now) return { valid: false };
     return { valid: true, role: decoded.role };

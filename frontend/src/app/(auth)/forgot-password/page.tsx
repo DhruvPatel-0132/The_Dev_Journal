@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Mail, ArrowLeft, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
 import AuthCard from "../_components/AuthCard";
 import { authApi } from "@/lib/api";
+import { getErrorMessage } from "@/lib/utils";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -27,8 +28,8 @@ export default function ForgotPasswordPage() {
       const data = await authApi.forgotPassword(email);
       setSuccess(data.message || "Reset link sent successfully");
       setEmail("");
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
+    } catch (err) {
+      setError(getErrorMessage(err) || "Failed to send reset email.");
     } finally {
       setLoading(false);
     }

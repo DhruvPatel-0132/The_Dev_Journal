@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, ArrowLeft, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
 import AuthCard from "../_components/AuthCard";
 import { authApi } from "@/lib/api";
+import { getErrorMessage } from "@/lib/utils";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -43,8 +44,8 @@ function ResetPasswordForm() {
       setTimeout(() => {
         router.push("/login");
       }, 2000);
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
+    } catch (err) {
+      setError(getErrorMessage(err) || "Failed to reset password.");
     } finally {
       setLoading(false);
     }

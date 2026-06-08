@@ -8,6 +8,7 @@ import { ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
 import AuthCard from "../_components/AuthCard";
 import { authApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
+import { getErrorMessage } from "@/lib/utils";
 
 export default function SelectRolePage() {
   const router = useRouter();
@@ -47,8 +48,8 @@ export default function SelectRolePage() {
 
         router.push(data.redirect || "/");
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to complete account setup");
+    } catch (err) {
+      setError(getErrorMessage(err) || "Failed to complete authentication.");
     } finally {
       setLoading(false);
     }

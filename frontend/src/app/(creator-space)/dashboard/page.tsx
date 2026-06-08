@@ -30,6 +30,7 @@ import {
   useArchiveArticle, 
   useUpdateArticle 
 } from "@/hooks/useArticles";
+import { getErrorMessage } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface DashboardStats {
@@ -212,7 +213,7 @@ export default function DashboardPage() {
   const articles: Article[] = articlesRes?.articles || [];
 
   const loading = statsLoading || articlesLoading;
-  const error = (statsError ? (sError as any)?.message : null) || (articlesError ? (aError as any)?.message : null);
+  const error = (statsError ? getErrorMessage(sError) : null) || (articlesError ? getErrorMessage(aError) : null);
 
   const deleteMutation = useDeleteArticle();
   const archiveMutation = useArchiveArticle();
@@ -261,8 +262,8 @@ export default function DashboardPage() {
     setActionError("");
     try {
       await updateMutation.mutateAsync({ slug: article.seoSlug, data: { status: newStatus } });
-    } catch (err: any) {
-      setActionError(err.message || "Failed to toggle status");
+    } catch (err) {
+      setActionError(getErrorMessage(err) || "Failed to update article");
     } finally {
       setTogglingSlug(null);
     }

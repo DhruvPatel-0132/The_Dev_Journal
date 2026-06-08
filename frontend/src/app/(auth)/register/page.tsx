@@ -9,6 +9,7 @@ import AuthCard from "../_components/AuthCard";
 import { authApi } from "@/lib/api";
 import { useGoogleLogin } from "@react-oauth/google";
 import GoogleIcon from "@/components/icons/GoogleIcon";
+import { getErrorMessage } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 
 export default function RegisterPage() {
@@ -34,8 +35,8 @@ export default function RegisterPage() {
     try {
       const data = await authApi.register({ name, email, password, role });
       router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
-    } catch (err: any) {
-      setError(err.message || "Registration failed");
+    } catch (err) {
+      setError(getErrorMessage(err) || "Failed to initiate registration.");
     } finally {
       setLoading(false);
     }
@@ -58,8 +59,8 @@ export default function RegisterPage() {
           sessionStorage.setItem("googleUser", JSON.stringify(data.user));
           router.push("/select-role");
         }
-      } catch (err: any) {
-        setError(err.message || "Google authentication failed");
+      } catch (err) {
+        setError(getErrorMessage(err) || "Failed to register with Google.");
       } finally {
         setLoading(false);
       }

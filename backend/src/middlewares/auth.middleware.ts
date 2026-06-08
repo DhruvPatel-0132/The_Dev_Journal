@@ -15,9 +15,8 @@ export const protectRoute = (
   }
 
   try {
-    const decoded = jwt.verify(token, env.JWT_SECRET);
-    // @ts-ignore
-    req.user = decoded;
+    const decoded = jwt.verify(token, env.JWT_SECRET) as { id: string; role: string };
+    req.user = { id: decoded.id, role: decoded.role };
     next();
   } catch (error) {
     res.status(401).json({ success: false, message: "Not authorized, token failed" });
@@ -33,7 +32,6 @@ export const creatorOnly = (
   res: Response,
   next: NextFunction
 ): void => {
-  // @ts-ignore
   const role = req.user?.role;
 
   if (role !== "creator") {

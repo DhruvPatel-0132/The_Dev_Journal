@@ -3,11 +3,14 @@
 import { useState, useEffect, useRef } from "react"
 import BackgroundGlow from "@/components/common/BackgroundGlow"
 import GridPattern from "@/components/common/GridPattern"
-import TipTapEditor from "@/components/editor/TipTapEditor"
+import dynamic from "next/dynamic"
+const TipTapEditor = dynamic(() => import("@/components/editor/TipTapEditor"), { ssr: false, loading: () => <p className="text-gray-400">Loading editor...</p> })
 import { Image as ImageIcon, Send, Save, ArrowLeft, X, Settings, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { articleApi, uploadApi } from "@/lib/api"
 import { useRouter } from "next/navigation"
+import { getErrorMessage } from "@/lib/utils"
+import Image from "next/image"
 
 function CreateBlogPage() {
     const router = useRouter()
@@ -82,9 +85,9 @@ function CreateBlogPage() {
                 setError("");
                 const result = await uploadApi.uploadImage(e.target.files[0]);
                 setCoverImage(result.url); 
-            } catch (err: any) {
+            } catch (err) {
                 console.error("Failed to upload image:", err);
-                setError(err.message || "Failed to upload image");
+                setError(getErrorMessage(err) || "Failed to upload image");
             } finally {
                 setIsLoading(false);
             }
@@ -130,9 +133,9 @@ function CreateBlogPage() {
             await articleApi.create(articleData)
             localStorage.removeItem("draft-create-blog")
             router.push('/dashboard')
-        } catch (err: any) {
+        } catch (err) {
             console.error("Failed to save article:", err)
-            setError(err.message || "An error occurred while saving the article.")
+            setError(getErrorMessage(err) || "An error occurred while saving the article.")
         } finally {
             setIsLoading(false)
         }
@@ -225,7 +228,7 @@ function CreateBlogPage() {
                         </button>
                     ) : (
                         <div className="w-full aspect-[4/1] rounded-2xl mb-10 relative overflow-hidden group">
-                            <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
+                            <Image src={coverImage} alt="Cover" fill className="object-cover" unoptimized />
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                 <button onClick={() => setCoverImage("")} className="px-4 py-2 bg-white/20 backdrop-blur-md rounded-lg text-white hover:bg-white/30 transition-colors">
                                     Remove Image

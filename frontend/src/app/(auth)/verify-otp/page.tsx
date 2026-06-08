@@ -8,6 +8,7 @@ import AuthCard from "../_components/AuthCard";
 import { authApi } from "@/lib/api";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
+import { getErrorMessage } from "@/lib/utils";
 
 export default function VerifyOTPPage() {
   const router = useRouter();
@@ -103,8 +104,8 @@ export default function VerifyOTPPage() {
 
       setSuccess(true);
       setTimeout(() => router.push(data.redirect || "/"), 2000);
-    } catch (err: any) {
-      setError(err.message || "Invalid OTP. Please try again.");
+    } catch (err) {
+      setError(getErrorMessage(err) || "Invalid OTP. Please try again.");
       triggerShake();
       setOtp(Array(6).fill(""));
       inputRefs.current[0]?.focus();
@@ -124,8 +125,8 @@ export default function VerifyOTPPage() {
       setCooldown(60);
       setOtp(Array(6).fill(""));
       inputRefs.current[0]?.focus();
-    } catch (err: any) {
-      setResendMessage(err.message || "Failed to resend OTP.");
+    } catch (err) {
+      setResendMessage(getErrorMessage(err) || "Failed to resend OTP.");
     } finally {
       setResending(false);
     }

@@ -9,6 +9,7 @@ import BlogNavbar from "@/components/layout/BlogNavbar";
 import Link from "next/link";
 import { useArticles, useCategories, useTags } from "@/hooks/useArticles";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Article } from "@/types";
 
 const POSTS_PER_PAGE = 6;
 
@@ -232,7 +233,7 @@ export default function BlogsPage() {
             >
               <AnimatePresence mode="popLayout">
                 {blogs.length > 0 ? (
-                  blogs.map((blog: any, index: number) => (
+                  blogs.map((blog: Article, index: number) => (
                     <motion.div
                       key={blog._id || index}
                       layout

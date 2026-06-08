@@ -28,7 +28,6 @@ router.post("/resend-otp", resendOTP);
 
 // Example protected route
 router.get("/me", protectRoute, (req, res) => {
-  // @ts-ignore
   res.status(200).json({ success: true, user: req.user });
 });
 

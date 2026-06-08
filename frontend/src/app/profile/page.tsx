@@ -82,7 +82,7 @@ function StatCard({
   delay,
   color,
 }: {
-  icon: any;
+  icon: React.ElementType;
   label: string;
   value: string;
   delay: number;

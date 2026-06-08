@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { articleApi } from "@/lib/api";
+import { Article } from "@/types";
 
 // ─── Query Keys ──────────────────────────────────────────────────────────────
 export const articleKeys = {
@@ -73,7 +74,7 @@ export function useCreateArticle() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: any) => articleApi.create(data),
+    mutationFn: (data: Partial<Article>) => articleApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: articleKeys.all });
     },
@@ -84,7 +85,7 @@ export function useUpdateArticle() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ slug, data }: { slug: string; data: any }) =>
+    mutationFn: ({ slug, data }: { slug: string; data: Partial<Article> }) =>
       articleApi.update(slug, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: articleKeys.all });

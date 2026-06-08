@@ -1,4 +1,6 @@
 import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
+import { Article, Category, DashboardStats, PaginatedResponse, Tag, TokenPayload } from "@/types";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -172,7 +174,7 @@ export const authApi = {
 };
 
 export const articleApi = {
-  create: async (data: any) => {
+  create: async (data: Partial<Article>) => {
     const res = await fetch(`${API_URL}/articles`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -191,7 +193,7 @@ export const articleApi = {
     return result;
   },
 
-  update: async (slug: string, data: any) => {
+  update: async (slug: string, data: Partial<Article>) => {
     const res = await fetch(`${API_URL}/articles/slug/${slug}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -203,7 +205,7 @@ export const articleApi = {
     return result;
   },
 
-  getDashboardStats: async () => {
+  getDashboardStats: async (): Promise<{ success: boolean; stats: DashboardStats }> => {
     const res = await fetch(`${API_URL}/articles/dashboard-stats`, {
       credentials: "include",
     });
@@ -212,7 +214,7 @@ export const articleApi = {
     return result;
   },
 
-  getMyArticles: async (params?: { page?: number; limit?: number; status?: string }) => {
+  getMyArticles: async (params?: { page?: number; limit?: number; status?: string }): Promise<PaginatedResponse<Article>> => {
     const query = new URLSearchParams();
     if (params?.page) query.set("page", String(params.page));
     if (params?.limit) query.set("limit", String(params.limit));
@@ -226,7 +228,7 @@ export const articleApi = {
     return result;
   },
 
-  getAllArticles: async (params?: { page?: number; limit?: number; search?: string; category?: string; tag?: string; sort?: string }) => {
+  getAllArticles: async (params?: { page?: number; limit?: number; search?: string; category?: string; tag?: string; sort?: string }): Promise<PaginatedResponse<Article>> => {
     const query = new URLSearchParams();
     if (params?.page) query.set("page", String(params.page));
     if (params?.limit) query.set("limit", String(params.limit));
@@ -243,28 +245,28 @@ export const articleApi = {
     return result;
   },
 
-  getCategories: async () => {
+  getCategories: async (): Promise<{ success: boolean; categories: Category[] }> => {
     const res = await fetch(`${API_URL}/articles/categories`);
     const result = await res.json();
     if (!res.ok) throw new Error(result.message);
     return result;
   },
 
-  getTags: async () => {
+  getTags: async (): Promise<{ success: boolean; tags: Tag[] }> => {
     const res = await fetch(`${API_URL}/articles/tags`);
     const result = await res.json();
     if (!res.ok) throw new Error(result.message);
     return result;
   },
 
-  getArticleBySlug: async (slug: string) => {
+  getArticleBySlug: async (slug: string): Promise<{ success: boolean; article: Article }> => {
     const res = await fetch(`${API_URL}/articles/slug/${slug}`);
     const result = await res.json();
     if (!res.ok) throw new Error(result.message);
     return result;
   },
 
-  getArticleForEdit: async (slug: string) => {
+  getArticleForEdit: async (slug: string): Promise<{ success: boolean; article: Article }> => {
     const res = await fetch(`${API_URL}/articles/edit/${slug}`, {
       credentials: "include",
     });
@@ -340,17 +342,16 @@ export const uploadApi = {
 
 export const verifyAndRefreshToken = async () => {
   let token = typeof window !== "undefined" ? Cookies.get("token") : null;
-  if (!token || token === "undefined" || token === "null") return null;
+  if (!token) return null;
 
   token = token.replace(/^"|"$/g, '');
 
   try {
-    const { jwtDecode } = await import("jwt-decode");
-    const decoded: any = jwtDecode(token);
-
-    // Check if token is expired or about to expire in the next 10 seconds
-    const currentTime = Date.now() / 1000;
-    if (decoded.exp && decoded.exp < currentTime + 10) {
+    const decoded = jwtDecode<TokenPayload>(token);
+    // Add 5 min buffer
+    const isExpired = (decoded.exp ?? 0) * 1000 < Date.now() + 5 * 60 * 1000;
+    
+    if (isExpired) {
       // Token expired, refresh it
       const data = await authApi.refresh();
       if (data.token) {

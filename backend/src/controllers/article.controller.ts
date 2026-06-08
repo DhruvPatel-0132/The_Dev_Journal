@@ -20,7 +20,6 @@ const handleError = (res: Response, error: any, defaultMessage: string) => {
 // ─── Dashboard Stats ─────────────────────────
 export const getDashboardStats = async (req: Request, res: Response): Promise<void> => {
   try {
-    // @ts-ignore - user is attached by the protectRoute middleware
     const userId = req.user?.id;
 
     if (!userId) {
@@ -39,7 +38,6 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
 // ─── My Articles ─────────────────────────────
 export const getMyArticles = async (req: Request, res: Response): Promise<void> => {
   try {
-    // @ts-ignore - user is attached by the protectRoute middleware
     const userId = req.user?.id;
 
     if (!userId) {
@@ -65,7 +63,6 @@ export const createArticle = async (req: Request, res: Response): Promise<void> 
   try {
     const validatedData = createArticleSchema.parse(req.body);
     
-    // @ts-ignore - user is attached by the protectRoute middleware
     const userId = req.user?.id;
     
     if (!userId) {
@@ -91,7 +88,6 @@ export const updateArticle = async (req: Request, res: Response): Promise<void> 
     const validatedData = updateArticleSchema.parse(req.body);
     const { slug } = req.params;
     
-    // @ts-ignore - user is attached by the protectRoute middleware
     const userId = req.user?.id;
     
     if (!userId) {
@@ -168,7 +164,6 @@ export const getArticleForEdit = async (req: Request, res: Response): Promise<vo
   try {
     const { slug } = req.params;
     
-    // @ts-ignore
     const userId = req.user?.id;
     if (!userId) {
       res.status(401).json({ success: false, message: "Not authorized" });
@@ -214,7 +209,6 @@ export const deleteArticle = async (req: Request, res: Response): Promise<void> 
   try {
     const { slug } = req.params;
 
-    // @ts-ignore
     const userId = req.user?.id;
     if (!userId) {
       res.status(401).json({ success: false, message: "Not authorized" });
@@ -234,7 +228,6 @@ export const archiveArticle = async (req: Request, res: Response): Promise<void>
   try {
     const { slug } = req.params;
 
-    // @ts-ignore
     const userId = req.user?.id;
     if (!userId) {
       res.status(401).json({ success: false, message: "Not authorized" });

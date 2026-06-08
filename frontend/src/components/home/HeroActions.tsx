@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { jwtDecode } from "jwt-decode";
 import { verifyAndRefreshToken } from "@/lib/api";
+import { TokenPayload } from "@/types";
 import Cookies from "js-cookie";
 
 export default function HeroActions() {
@@ -20,9 +21,9 @@ export default function HeroActions() {
       return;
     }
 
-    let decoded: any;
+    let decoded: TokenPayload | null = null;
     try {
-      decoded = jwtDecode(token);
+      decoded = jwtDecode<TokenPayload>(token);
     } catch (err) {
       console.error("Token decode error:", err);
       Cookies.remove("token");

@@ -7,13 +7,14 @@ import { ArrowLeft, Calendar, Clock, Share2, Heart, Eye, ThumbsDown } from "luci
 import BackgroundGlow from "@/components/common/BackgroundGlow";
 import GridPattern from "@/components/common/GridPattern";
 import BlogNavbar from "@/components/layout/BlogNavbar";
+import { Article } from "@/types";
 import { articleApi } from "@/lib/api";
 import Link from "next/link";
 import Image from "next/image";
 import DOMPurify from "dompurify";
 
 interface ArticleContentProps {
-  article: any;
+  article: Article;
   slug: string;
 }
 
