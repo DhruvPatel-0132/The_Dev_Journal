@@ -6,10 +6,12 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   try {
     const resolvedParams = await params;
     const res = await articleApi.getArticleBySlug(resolvedParams.slug);
     const article = res.article;
+    const canonicalUrl = `${APP_URL}/blog/${article.seoSlug || resolvedParams.slug}`;
 
     return {
       title: `${article.title} | The Dev Journal`,
@@ -17,10 +19,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       keywords: article.seoKeywords?.length ? article.seoKeywords : (article.tags || []),
       authors: article.author?.name ? [{ name: article.author.name }] : undefined,
       category: article.category,
+      alternates: {
+        canonical: canonicalUrl,
+      },
       openGraph: {
         title: article.title,
         description: article.summary || (article.content ? article.content.replace(/<[^>]*>?/gm, '').substring(0, 160) : ""),
-        url: `${process.env.NEXT_PUBLIC_APP_URL || ''}/blog/${article.seoSlug || resolvedParams.slug}`,
+        url: canonicalUrl,
         siteName: 'The Dev Journal',
         images: article.bannerImage?.url ? [
           {
