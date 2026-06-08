@@ -271,7 +271,7 @@ export default function ProfilePage() {
                 </div>
               )}
               {/* Online dot */}
-              <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-[#0A0A0B]" />
+              {/* <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-[#0A0A0B]" /> */}
             </div>
 
             {/* Info */}
