@@ -10,6 +10,7 @@ import BlogNavbar from "@/components/layout/BlogNavbar";
 import { articleApi } from "@/lib/api";
 import Link from "next/link";
 import Image from "next/image";
+import DOMPurify from "dompurify";
 
 interface ArticleContentProps {
   article: any;
@@ -198,7 +199,7 @@ export default function ArticleContent({ article, slug }: ArticleContentProps) {
             prose-blockquote:border-indigo-500/50 prose-blockquote:bg-indigo-500/5 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-xl prose-blockquote:not-italic
             prose-code:text-indigo-300 prose-code:bg-indigo-500/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none
             prose-pre:bg-[#111113] prose-pre:border prose-pre:border-white/10 prose-pre:shadow-xl"
-          dangerouslySetInnerHTML={{ __html: article.content }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.content) }}
         />
 
         {/* Tags */}

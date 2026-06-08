@@ -8,6 +8,7 @@ import GridPattern from "@/components/common/GridPattern";
 import BlogNavbar from "@/components/layout/BlogNavbar";
 import Link from "next/link";
 import { useArticles, useCategories, useTags } from "@/hooks/useArticles";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const POSTS_PER_PAGE = 6;
 
@@ -113,7 +114,7 @@ export default function BlogsPage() {
                 >
                   All Categories
                 </button>
-                {categories.map((c) => (
+                {categories.map((c: {name: string; count: number}) => (
                   <button
                     key={c.name}
                     onClick={() => setSelectedCategory(c.name)}
@@ -141,7 +142,7 @@ export default function BlogsPage() {
                 >
                   All Tags
                 </button>
-                {tags.map((t) => (
+                {tags.map((t: {name: string; count: number}) => (
                   <button
                     key={t.name}
                     onClick={() => setSelectedTag(t.name)}
@@ -184,8 +185,23 @@ export default function BlogsPage() {
           )}
 
           {loading && blogs.length === 0 && !isError ? (
-            <div className="flex justify-center items-center py-20">
-              <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="flex flex-col h-[280px] bg-white/[0.02] border border-white/[0.05] rounded-2xl p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Skeleton className="w-4 h-4 rounded-full" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <Skeleton className="h-6 w-3/4 mb-3" />
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-5/6 mb-6" />
+                  <div className="flex gap-2 mb-6">
+                    <Skeleton className="h-6 w-16" />
+                    <Skeleton className="h-6 w-20" />
+                  </div>
+                  <Skeleton className="h-4 w-28 mt-auto" />
+                </div>
+              ))}
             </div>
           ) : (
             <motion.div 
@@ -194,7 +210,7 @@ export default function BlogsPage() {
             >
               <AnimatePresence mode="popLayout">
                 {blogs.length > 0 ? (
-                  blogs.map((blog, index) => (
+                  blogs.map((blog: any, index: number) => (
                     <motion.div
                       key={blog._id || index}
                       layout

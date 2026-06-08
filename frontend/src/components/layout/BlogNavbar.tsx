@@ -7,32 +7,13 @@ import { motion } from "framer-motion";
 import { ArrowRight, User } from "lucide-react";
 import Logo from "./Logo";
 import { authApi } from "@/lib/api";
-import { useEffect, useState } from "react";
-
-type UserType = {
-  name: string;
-  email: string;
-  avatar: string;
-  role?: string;
-};
+import { useAuthStore } from "@/store/authStore";
 
 export default function BlogNavbar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [user, setUser] = useState<UserType | null>(null);
-
-  useEffect(() => {
-    const userData = localStorage.getItem("user");
-
-    if (userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (e) {
-        console.error("Failed to parse user data", e);
-      }
-    }
-  }, []);
+  const { user, isInitialized, logout } = useAuthStore();
 
   const handleLogout = async () => {
     try {
@@ -41,10 +22,7 @@ export default function BlogNavbar() {
       console.error("Failed to logout from backend", e);
     }
 
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    setUser(null);
+    logout();
     router.push("/");
   };
 

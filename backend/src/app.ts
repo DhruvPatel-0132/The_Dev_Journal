@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
+import rateLimit from "express-rate-limit";
 
 import authRoutes from "./routes/auth.routes";
 import articleRoutes from "./routes/article.routes";
@@ -12,6 +13,19 @@ const app = express();
 
 /* Security */
 app.use(helmet());
+
+// Apply global rate limiting
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: {
+    success: false,
+    message: "Too many requests from this IP, please try again after 15 minutes.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(globalLimiter);
 
 /* Logging */
 app.use(morgan("dev"));

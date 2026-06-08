@@ -30,6 +30,7 @@ import {
   useArchiveArticle, 
   useUpdateArticle 
 } from "@/hooks/useArticles";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DashboardStats {
   totalViews: number;
@@ -422,15 +423,15 @@ export default function DashboardPage() {
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div
                     key={i}
-                    className={`p-6 flex items-center justify-between animate-pulse ${
+                    className={`p-6 flex items-center justify-between ${
                       i !== 2 ? "border-b border-white/10" : ""
                     }`}
                   >
                     <div className="flex-1">
-                      <div className="h-5 w-48 bg-white/10 rounded mb-2" />
-                      <div className="h-3 w-24 bg-white/10 rounded" />
+                      <Skeleton className="h-5 w-48 mb-2" />
+                      <Skeleton className="h-3 w-24" />
                     </div>
-                    <div className="h-6 w-20 bg-white/10 rounded-full" />
+                    <Skeleton className="h-6 w-20 rounded-full" />
                   </div>
                 ))}
               </div>

@@ -9,6 +9,7 @@ import AuthCard from "../_components/AuthCard";
 import { authApi } from "@/lib/api";
 import { useGoogleLogin } from "@react-oauth/google";
 import GoogleIcon from "@/components/icons/GoogleIcon";
+import { useAuthStore } from "@/store/authStore";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [unverified, setUnverified] = useState(false);
+  const { login } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,10 +46,7 @@ export default function LoginPage() {
       }
 
       if (data.token) {
-        localStorage.setItem("token", data.token);
-        if (data.user) {
-          localStorage.setItem("user", JSON.stringify(data.user));
-        }
+        login(data.user || null, data.token);
         router.push(data.redirect || "/");
       } else {
         setError("Login failed. No token received.");
@@ -68,10 +67,7 @@ export default function LoginPage() {
       try {
         const data = await authApi.googleAuth(tokenResponse.access_token);
         if (data.existingUser) {
-          localStorage.setItem("token", data.token);
-          if (data.user) {
-            localStorage.setItem("user", JSON.stringify(data.user));
-          }
+          login(data.user || null, data.token);
           router.push(data.redirect || "/");
         } else {
           // New user, store temp data and go to select-role
