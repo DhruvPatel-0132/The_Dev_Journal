@@ -290,16 +290,23 @@ export const processGoogleAuth = async (credential: string) => {
     throw new AppError("Missing credential", 400);
   }
 
-  const ticket = await client.verifyIdToken({
-    idToken: credential,
-    audience: process.env.GOOGLE_CLIENT_ID,
-  });
-  const payload = ticket.getPayload();
-  if (!payload) {
-    throw new AppError("Invalid token payload", 400);
+  // Fetch user profile from Google using the access token
+  let email, name, picture;
+  try {
+    const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${credential}` }
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch user info");
+    }
+    const payload = await response.json();
+    email = payload.email;
+    name = payload.name;
+    picture = payload.picture;
+  } catch (err) {
+    throw new AppError("Invalid Google token", 400);
   }
 
-  const { email, name, picture } = payload;
   if (!email || !name) {
     throw new AppError("Missing email or name from Google", 400);
   }
@@ -377,16 +384,25 @@ export const completeGoogleRegistration = async (credential: string, role: strin
     throw new AppError("Invalid role", 400);
   }
 
-  const ticket = await client.verifyIdToken({
-    idToken: credential,
-    audience: process.env.GOOGLE_CLIENT_ID,
-  });
-  const googlePayload = ticket.getPayload();
-  if (!googlePayload || !googlePayload.email || !googlePayload.name) {
+  let email, name, picture;
+  try {
+    const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${credential}` }
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch user info");
+    }
+    const googlePayload = await response.json();
+    email = googlePayload.email;
+    name = googlePayload.name;
+    picture = googlePayload.picture;
+  } catch (err) {
     throw new AppError("Invalid Google token", 400);
   }
 
-  const { email, name, picture } = googlePayload;
+  if (!email || !name) {
+    throw new AppError("Invalid Google token", 400);
+  }
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {

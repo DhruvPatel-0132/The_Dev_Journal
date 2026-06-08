@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, ArrowRight, AlertCircle, MailOpen } from "lucide-react";
 import AuthCard from "../_components/AuthCard";
 import { authApi } from "@/lib/api";
-import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
+import { useGoogleLogin } from "@react-oauth/google";
+import GoogleIcon from "@/components/icons/GoogleIcon";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -58,31 +59,34 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = async (response: CredentialResponse) => {
-    if (!response.credential) return;
-    setLoading(true);
-    setError("");
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse: any) => {
+      if (!tokenResponse.access_token) return;
+      setLoading(true);
+      setError("");
 
-    try {
-      const data = await authApi.googleAuth(response.credential);
-      if (data.existingUser) {
-        localStorage.setItem("token", data.token);
-        if (data.user) {
-          localStorage.setItem("user", JSON.stringify(data.user));
+      try {
+        const data = await authApi.googleAuth(tokenResponse.access_token);
+        if (data.existingUser) {
+          localStorage.setItem("token", data.token);
+          if (data.user) {
+            localStorage.setItem("user", JSON.stringify(data.user));
+          }
+          router.push(data.redirect || "/");
+        } else {
+          // New user, store temp data and go to select-role
+          sessionStorage.setItem("googleCredential", tokenResponse.access_token);
+          sessionStorage.setItem("googleUser", JSON.stringify(data.user));
+          router.push("/select-role");
         }
-        router.push(data.redirect || "/");
-      } else {
-        // New user, store temp data and go to select-role
-        sessionStorage.setItem("googleCredential", response.credential);
-        sessionStorage.setItem("googleUser", JSON.stringify(data.user));
-        router.push("/select-role");
+      } catch (err: any) {
+        setError(err.message || "Google authentication failed");
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      setError(err.message || "Google authentication failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    onError: () => setError("Google Login Failed"),
+  });
 
   return (
     <AuthCard>
@@ -228,17 +232,15 @@ export default function LoginPage() {
         </div>
 
         {/* Google Login */}
-        <div className="flex justify-center w-full [&>div]:w-full [&>div>div]:w-full">
-          <GoogleLogin
-            onSuccess={handleGoogleLogin}
-            onError={() => setError("Google Login Failed")}
-            theme="filled_black"
-            size="large"
-            shape="rectangular"
-            text="continue_with"
-            width="100%"
-          />
-        </div>
+        <button
+          type="button"
+          onClick={() => handleGoogleLogin()}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl 
+          bg-white/5 border border-white/10 hover:bg-white/10 transition text-sm font-medium"
+        >
+          <GoogleIcon />
+          Continue with Google
+        </button>
 
         {/* Footer */}
         <p className="text-center text-sm text-zinc-500">

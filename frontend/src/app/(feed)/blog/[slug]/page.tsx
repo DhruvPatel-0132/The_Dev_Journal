@@ -46,11 +46,11 @@ export default function ArticlePage() {
       const prevAction = userAction;
       if (prevAction === 'liked') {
         setUserAction('none');
-        setLikeCount(prev => Math.max(0, prev - 1));
+        setLikeCount((prev: number) => Math.max(0, prev - 1));
       } else {
         setUserAction('liked');
-        setLikeCount(prev => prev + 1);
-        if (prevAction === 'disliked') setDislikeCount(prev => Math.max(0, prev - 1));
+        setLikeCount((prev: number) => prev + 1);
+        if (prevAction === 'disliked') setDislikeCount((prev: number) => Math.max(0, prev - 1));
       }
       
       const res = await articleApi.toggleLike(slug);
@@ -67,11 +67,11 @@ export default function ArticlePage() {
       const prevAction = userAction;
       if (prevAction === 'disliked') {
         setUserAction('none');
-        setDislikeCount(prev => Math.max(0, prev - 1));
+        setDislikeCount((prev: number) => Math.max(0, prev - 1));
       } else {
         setUserAction('disliked');
-        setDislikeCount(prev => prev + 1);
-        if (prevAction === 'liked') setLikeCount(prev => Math.max(0, prev - 1));
+        setDislikeCount((prev: number) => prev + 1);
+        if (prevAction === 'liked') setLikeCount((prev: number) => Math.max(0, prev - 1));
       }
       
       const res = await articleApi.toggleDislike(slug);
