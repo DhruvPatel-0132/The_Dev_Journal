@@ -167,7 +167,7 @@ export const getMyArticles = async (
 
 // ─── All Published Articles (paginated) ──────
 export const getAllPublishedArticles = async (
-  options: { page?: number; limit?: number; search?: string }
+  options: { page?: number; limit?: number; search?: string; category?: string; tag?: string }
 ) => {
   const page = options.page || 1;
   const limit = options.limit || 10;
@@ -183,6 +183,16 @@ export const getAllPublishedArticles = async (
       { tags: { $in: [searchRegex] } },
       { category: searchRegex }
     ];
+  }
+
+  if (options.category) {
+    const safeCategory = options.category.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    filter.category = new RegExp(`^${safeCategory}$`, 'i');
+  }
+
+  if (options.tag) {
+    const safeTag = options.tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    filter.tags = new RegExp(`^${safeTag}$`, 'i');
   }
 
   const [articles, total] = await Promise.all([
@@ -216,6 +226,29 @@ export const getAllPublishedArticles = async (
       totalPages: Math.ceil(total / limit),
     },
   };
+};
+
+// ─── Get Categories ──────────────────────────
+export const getCategories = async () => {
+  const categories = await Article.aggregate([
+    { $match: { status: "published" } },
+    { $group: { _id: { $toLower: "$category" }, original: { $first: "$category" }, count: { $sum: 1 } } },
+    { $project: { _id: 0, name: "$original", count: 1 } },
+    { $sort: { count: -1 } }
+  ]);
+  return categories;
+};
+
+// ─── Get Tags ────────────────────────────────
+export const getTags = async () => {
+  const tags = await Article.aggregate([
+    { $match: { status: "published" } },
+    { $unwind: "$tags" },
+    { $group: { _id: { $toLower: "$tags" }, original: { $first: "$tags" }, count: { $sum: 1 } } },
+    { $project: { _id: 0, name: "$original", count: 1 } },
+    { $sort: { count: -1 } }
+  ]);
+  return tags;
 };
 
 // ─── Get Single Article by Slug ──────────────

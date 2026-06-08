@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createArticle, getDashboardStats, getMyArticles, getAllArticles, getArticleBySlug, toggleLikeArticle, toggleDislikeArticle, updateArticle, getArticleForEdit, deleteArticle, archiveArticle } from "../controllers/article.controller";
+import { createArticle, getDashboardStats, getMyArticles, getAllArticles, getCategories, getTags, getArticleBySlug, toggleLikeArticle, toggleDislikeArticle, updateArticle, getArticleForEdit, deleteArticle, archiveArticle } from "../controllers/article.controller";
 import { protectRoute, creatorOnly } from "../middlewares/auth.middleware";
 
 const router = Router();
@@ -9,6 +9,12 @@ router.get("/dashboard-stats", protectRoute, creatorOnly, getDashboardStats);
 
 // My articles (paginated, filterable by status) — creators only
 router.get("/my-articles", protectRoute, creatorOnly, getMyArticles);
+
+// Get categories — public
+router.get("/categories", getCategories);
+
+// Get tags — public
+router.get("/tags", getTags);
 
 // Get all published articles (feed) — public
 router.get("/", getAllArticles);

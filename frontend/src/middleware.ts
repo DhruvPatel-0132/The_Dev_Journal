@@ -19,7 +19,7 @@ const AUTH_ROUTES = [
 const CREATOR_ROUTES = ['/dashboard', '/create-blog', '/edit-blog'];
 
 // Routes that require any authenticated user
-const PROTECTED_ROUTES = ['/blog', '/profile'];
+const PROTECTED_ROUTES = ['/profile'];
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 async function tryRefreshToken(

@@ -224,15 +224,31 @@ export const articleApi = {
     return result;
   },
 
-  getAllArticles: async (params?: { page?: number; limit?: number; search?: string }) => {
+  getAllArticles: async (params?: { page?: number; limit?: number; search?: string; category?: string; tag?: string }) => {
     const query = new URLSearchParams();
     if (params?.page) query.set("page", String(params.page));
     if (params?.limit) query.set("limit", String(params.limit));
     if (params?.search) query.set("search", params.search);
+    if (params?.category) query.set("category", params.category);
+    if (params?.tag) query.set("tag", params.tag);
 
     const res = await fetch(`${API_URL}/articles?${query.toString()}`, {
       // no credentials needed since feed can be public
     });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+
+  getCategories: async () => {
+    const res = await fetch(`${API_URL}/articles/categories`);
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+
+  getTags: async () => {
+    const res = await fetch(`${API_URL}/articles/tags`);
     const result = await res.json();
     if (!res.ok) throw new Error(result.message);
     return result;

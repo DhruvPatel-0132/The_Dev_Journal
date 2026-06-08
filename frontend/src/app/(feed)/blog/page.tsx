@@ -13,11 +13,31 @@ const POSTS_PER_PAGE = 6;
 
 export default function BlogsPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedTag, setSelectedTag] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   
   const [blogs, setBlogs] = useState<any[]>([]);
+  const [categories, setCategories] = useState<{name: string; count: number}[]>([]);
+  const [tags, setTags] = useState<{name: string; count: number}[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
+
+  useEffect(() => {
+    const fetchFilters = async () => {
+      try {
+        const [catRes, tagRes] = await Promise.all([
+          articleApi.getCategories(),
+          articleApi.getTags()
+        ]);
+        setCategories(catRes.categories || []);
+        setTags(tagRes.tags || []);
+      } catch (err) {
+        console.error("Failed to fetch filters:", err);
+      }
+    };
+    fetchFilters();
+  }, []);
 
   useEffect(() => {
     const fetchBlogs = async () => {
@@ -27,6 +47,8 @@ export default function BlogsPage() {
           page: currentPage,
           limit: POSTS_PER_PAGE,
           search: searchQuery || undefined,
+          category: selectedCategory || undefined,
+          tag: selectedTag || undefined,
         });
         setBlogs(res.articles || []);
         setTotalCount(res.pagination?.total || 0);
@@ -42,12 +64,12 @@ export default function BlogsPage() {
     }, 300); // debounce search
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, currentPage]);
+  }, [searchQuery, selectedCategory, selectedTag, currentPage]);
 
-  // Reset page when search changes
+  // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, selectedCategory, selectedTag]);
 
   const totalPages = Math.ceil(totalCount / POSTS_PER_PAGE);
 
@@ -98,6 +120,65 @@ export default function BlogsPage() {
               className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all backdrop-blur-sm"
             />
           </motion.div>
+        </div>
+
+        {/* Filters */}
+        <div className="mb-12 space-y-6">
+          {categories.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="flex flex-col gap-2"
+            >
+              <h3 className="text-sm font-semibold text-zinc-400">Categories</h3>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setSelectedCategory("")}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${!selectedCategory ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'bg-white/5 text-zinc-400 border border-transparent hover:bg-white/10 hover:text-zinc-200'}`}
+                >
+                  All Categories
+                </button>
+                {categories.map((c) => (
+                  <button
+                    key={c.name}
+                    onClick={() => setSelectedCategory(c.name)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedCategory === c.name ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'bg-white/5 text-zinc-400 border border-transparent hover:bg-white/10 hover:text-zinc-200'}`}
+                  >
+                    {c.name} <span className="ml-1.5 opacity-50 text-xs font-normal bg-black/20 px-1.5 py-0.5 rounded-md">{c.count}</span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {tags.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="flex flex-col gap-2"
+            >
+              <h3 className="text-sm font-semibold text-zinc-400">Tags</h3>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setSelectedTag("")}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${!selectedTag ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'bg-white/5 text-zinc-400 border border-transparent hover:bg-white/10 hover:text-zinc-200'}`}
+                >
+                  All Tags
+                </button>
+                {tags.map((t) => (
+                  <button
+                    key={t.name}
+                    onClick={() => setSelectedTag(t.name)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedTag === t.name ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'bg-white/5 text-zinc-400 border border-transparent hover:bg-white/10 hover:text-zinc-200'}`}
+                  >
+                    #{t.name} <span className="ml-1.5 opacity-50 text-xs font-normal bg-black/20 px-1.5 py-0.5 rounded-md">{t.count}</span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {/* Blog Grid */}
