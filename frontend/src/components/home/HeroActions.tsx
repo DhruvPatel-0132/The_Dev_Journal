@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { jwtDecode } from "jwt-decode";
 import { verifyAndRefreshToken } from "@/lib/api";
+import Cookies from "js-cookie";
 
 export default function HeroActions() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function HeroActions() {
       decoded = jwtDecode(token);
     } catch (err) {
       console.error("Token decode error:", err);
-      localStorage.removeItem("token");
+      Cookies.remove("token");
       router.push("/login");
       return;
     }
@@ -41,7 +42,7 @@ export default function HeroActions() {
 
   const handleStartWriting = async () => {
     const token = await verifyAndRefreshToken();
-    let userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+    let userStr = typeof window !== "undefined" ? Cookies.get("user") : null;
 
     if (userStr === "undefined" || userStr === "null") userStr = null;
 
@@ -56,7 +57,7 @@ export default function HeroActions() {
       user = JSON.parse(userStr);
     } catch (err) {
       console.error("User parse error:", err);
-      localStorage.removeItem("user");
+      Cookies.remove("user");
       router.push("/login");
       return;
     }

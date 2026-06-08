@@ -57,6 +57,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     res.cookie("accessToken", result.accessToken, {
       httpOnly: true,
+      secure: true,
       maxAge: 15 * 60 * 1000,
       sameSite: "lax",
       path: "/",
@@ -64,6 +65,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
+      secure: true,
       maxAge: result.expiresDays * 24 * 60 * 60 * 1000,
       sameSite: "lax",
       path: "/",
@@ -90,6 +92,7 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
 
     res.cookie("accessToken", result.accessToken, {
       httpOnly: true,
+      secure: true,
       maxAge: 15 * 60 * 1000,
       sameSite: "lax",
       path: "/",
@@ -97,6 +100,7 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
 
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
+      secure: true,
       maxAge: result.expiresDays * 24 * 60 * 60 * 1000,
       sameSite: "lax",
       path: "/",
@@ -118,11 +122,13 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 
     res.clearCookie("accessToken", {
       httpOnly: true,
+      secure: true,
       sameSite: "lax",
       path: "/",
     });
     res.clearCookie("refreshToken", {
       httpOnly: true,
+      secure: true,
       sameSite: "lax",
       path: "/",
     });
@@ -144,6 +150,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
     if (result.existingUser) {
       res.cookie("accessToken", result.accessToken, {
         httpOnly: true,
+        secure: true,
         maxAge: 15 * 60 * 1000,
         sameSite: "lax",
         path: "/",
@@ -151,6 +158,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
 
       res.cookie("refreshToken", result.refreshToken, {
         httpOnly: true,
+        secure: true,
         maxAge: result.expiresDays! * 24 * 60 * 60 * 1000,
         sameSite: "lax",
         path: "/",
@@ -177,6 +185,7 @@ export const completeGoogleAuth = async (req: Request, res: Response): Promise<v
 
     res.cookie("accessToken", result.accessToken, {
       httpOnly: true,
+      secure: true,
       maxAge: 15 * 60 * 1000,
       sameSite: "lax",
       path: "/",
@@ -184,6 +193,7 @@ export const completeGoogleAuth = async (req: Request, res: Response): Promise<v
 
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
+      secure: true,
       maxAge: result.expiresDays * 24 * 60 * 60 * 1000,
       sameSite: "lax",
       path: "/",
@@ -214,6 +224,7 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
 
     res.cookie("accessToken", result.accessToken, {
       httpOnly: true,
+      secure: true,
       maxAge: 15 * 60 * 1000,
       sameSite: "lax",
       path: "/",
@@ -221,6 +232,7 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
 
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
+      secure: true,
       maxAge: result.expiresDays * 24 * 60 * 60 * 1000,
       sameSite: "lax",
       path: "/",

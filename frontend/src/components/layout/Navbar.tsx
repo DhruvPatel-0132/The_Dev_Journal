@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 import Logo from "./Logo";
 import { jwtDecode } from "jwt-decode";
 import { verifyAndRefreshToken } from "@/lib/api";
+import Cookies from "js-cookie";
 
 export default function Navbar() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function Navbar() {
       decoded = jwtDecode(token);
     } catch (err) {
       console.error("Token decode error:", err);
-      localStorage.removeItem("token");
+      Cookies.remove("token");
       router.push("/login");
       return;
     }

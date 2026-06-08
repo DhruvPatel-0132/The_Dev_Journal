@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 import {
   User,
   Mail,
@@ -172,9 +173,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  // ── Load user from localStorage ──────────────────────────────────────────
+  // ── Load user from Cookies ──────────────────────────────────────────────
   useEffect(() => {
-    const raw = localStorage.getItem("user");
+    const raw = Cookies.get("user");
     if (!raw) { router.push("/login"); return; }
     try {
       const parsed = JSON.parse(raw);
@@ -209,8 +210,8 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     setLoggingOut(true);
     try { await authApi.logout(); } catch { /* silent */ }
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    Cookies.remove("token");
+    Cookies.remove("user");
     router.push("/");
   };
 

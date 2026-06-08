@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import Cookies from 'js-cookie'
 
 export interface User {
   id: string
@@ -26,21 +27,21 @@ export const useAuthStore = create<AuthState>((set) => ({
   isInitialized: false,
 
   login: (user, token) => {
-    localStorage.setItem('user', JSON.stringify(user))
-    localStorage.setItem('token', token)
+    Cookies.set('user', JSON.stringify(user), { expires: 7, secure: true })
+    Cookies.set('token', token, { expires: 7, secure: true })
     set({ user, token, isAuthenticated: true })
   },
 
   logout: () => {
-    localStorage.removeItem('user')
-    localStorage.removeItem('token')
+    Cookies.remove('user')
+    Cookies.remove('token')
     set({ user: null, token: null, isAuthenticated: false })
   },
 
   initAuth: () => {
     try {
-      const userStr = localStorage.getItem('user')
-      const token = localStorage.getItem('token')
+      const userStr = Cookies.get('user')
+      const token = Cookies.get('token')
       
       if (userStr && token) {
         const user = JSON.parse(userStr)
@@ -49,7 +50,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ user: null, token: null, isAuthenticated: false, isInitialized: true })
       }
     } catch (e) {
-      console.error("Failed to parse user from local storage", e)
+      console.error("Failed to parse user from cookies", e)
       set({ user: null, token: null, isAuthenticated: false, isInitialized: true })
     }
   },
@@ -58,7 +59,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set((state) => {
       if (!state.user) return state
       const updatedUser = { ...state.user, ...updates }
-      localStorage.setItem('user', JSON.stringify(updatedUser))
+      Cookies.set('user', JSON.stringify(updatedUser), { expires: 7, secure: true })
       return { user: updatedUser }
     })
   }

@@ -167,7 +167,7 @@ export const getMyArticles = async (
 
 // ─── All Published Articles (paginated) ──────
 export const getAllPublishedArticles = async (
-  options: { page?: number; limit?: number; search?: string; category?: string; tag?: string }
+  options: { page?: number; limit?: number; search?: string; category?: string; tag?: string; sort?: string }
 ) => {
   const page = options.page || 1;
   const limit = options.limit || 10;
@@ -195,9 +195,16 @@ export const getAllPublishedArticles = async (
     filter.tags = new RegExp(`^${safeTag}$`, 'i');
   }
 
+  let sortObj: any = { publishedAt: -1 };
+  if (options.sort === "oldest") {
+    sortObj = { publishedAt: 1 };
+  } else if (options.sort === "popular") {
+    sortObj = { viewCount: -1, likeCount: -1, publishedAt: -1 };
+  }
+
   const [articles, total] = await Promise.all([
     Article.find(filter)
-      .sort({ publishedAt: -1 })
+      .sort(sortObj)
       .skip(skip)
       .limit(limit)
       .select("title seoSlug summary category tags viewCount likeCount readTime publishedAt bannerImage author")

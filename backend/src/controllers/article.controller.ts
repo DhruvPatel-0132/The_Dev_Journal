@@ -114,13 +114,14 @@ export const updateArticle = async (req: Request, res: Response): Promise<void> 
 // ─── All Published Articles ──────────────────
 export const getAllArticles = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { page, limit, search, category, tag } = req.query;
+    const { page, limit, search, category, tag, sort } = req.query;
     const result = await articleService.getAllPublishedArticles({
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
       search: search as string | undefined,
       category: category as string | undefined,
       tag: tag as string | undefined,
+      sort: sort as string | undefined,
     });
 
     res.status(200).json({ success: true, ...result });

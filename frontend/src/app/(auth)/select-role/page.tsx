@@ -7,12 +7,14 @@ import { motion } from "framer-motion";
 import { ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
 import AuthCard from "../_components/AuthCard";
 import { authApi } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
 
 export default function SelectRolePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [role, setRole] = useState("visitor");
+  const { login } = useAuthStore();
   const [googleData, setGoogleData] = useState<{
     credential: string;
     user: { name: string; email: string; avatar: string };
@@ -37,12 +39,9 @@ export default function SelectRolePage() {
 
     try {
       const data = await authApi.completeGoogleAuth(googleData.credential, role);
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-        if (data.user) {
-          localStorage.setItem("user", JSON.stringify(data.user));
-        }
-        // clear session storage
+        if (data.token) {
+          login(data.user || null, data.token);
+          // clear session storage
         sessionStorage.removeItem("googleCredential");
         sessionStorage.removeItem("googleUser");
 

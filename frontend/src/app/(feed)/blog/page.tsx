@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ChevronLeft, ChevronRight, Calendar, ArrowRight, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Calendar, ArrowRight, Loader2, AlertTriangle, RefreshCw, SlidersHorizontal } from "lucide-react";
 import BackgroundGlow from "@/components/common/BackgroundGlow";
 import GridPattern from "@/components/common/GridPattern";
 import BlogNavbar from "@/components/layout/BlogNavbar";
@@ -16,6 +16,7 @@ export default function BlogsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedTag, setSelectedTag] = useState("");
+  const [selectedSort, setSelectedSort] = useState("recent");
   const [currentPage, setCurrentPage] = useState(1);
   
   const { data: catRes } = useCategories();
@@ -36,6 +37,7 @@ export default function BlogsPage() {
     search: searchQuery || undefined,
     category: selectedCategory || undefined,
     tag: selectedTag || undefined,
+    sort: selectedSort !== "recent" ? selectedSort : undefined,
   });
 
   const blogs = articlesRes?.articles || [];
@@ -44,7 +46,7 @@ export default function BlogsPage() {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCategory, selectedTag]);
+  }, [searchQuery, selectedCategory, selectedTag, selectedSort]);
 
   const totalPages = Math.ceil(totalCount / POSTS_PER_PAGE);
 
@@ -78,23 +80,43 @@ export default function BlogsPage() {
             </p>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="w-full md:w-80 relative group"
-          >
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-zinc-500 group-focus-within:text-indigo-400 transition-colors" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search articles..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all backdrop-blur-sm"
-            />
-          </motion.div>
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="w-full sm:w-80 relative group"
+            >
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-zinc-500 group-focus-within:text-indigo-400 transition-colors" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search articles..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all backdrop-blur-sm"
+              />
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="w-full sm:w-auto flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-4 py-3 backdrop-blur-sm h-full"
+            >
+              <SlidersHorizontal className="h-4 w-4 text-zinc-400 shrink-0" />
+              <select
+                value={selectedSort}
+                onChange={(e) => setSelectedSort(e.target.value)}
+                className="bg-transparent text-sm text-zinc-300 focus:outline-none focus:text-white cursor-pointer w-full sm:w-auto"
+              >
+                <option value="recent" className="bg-[#121214] text-zinc-300">Most Recent</option>
+                <option value="popular" className="bg-[#121214] text-zinc-300">Most Popular</option>
+                <option value="oldest" className="bg-[#121214] text-zinc-300">Oldest First</option>
+              </select>
+            </motion.div>
+          </div>
         </div>
 
         {/* Filters */}

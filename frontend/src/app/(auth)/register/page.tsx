@@ -9,6 +9,7 @@ import AuthCard from "../_components/AuthCard";
 import { authApi } from "@/lib/api";
 import { useGoogleLogin } from "@react-oauth/google";
 import GoogleIcon from "@/components/icons/GoogleIcon";
+import { useAuthStore } from "@/store/authStore";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("visitor");
   const [error, setError] = useState("");
+  const { login } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,10 +50,7 @@ export default function RegisterPage() {
       try {
         const data = await authApi.googleAuth(tokenResponse.access_token);
         if (data.existingUser) {
-          localStorage.setItem("token", data.token);
-          if (data.user) {
-            localStorage.setItem("user", JSON.stringify(data.user));
-          }
+          login(data.user || null, data.token);
           router.push(data.redirect || "/");
         } else {
           // New user, store temp data and go to select-role

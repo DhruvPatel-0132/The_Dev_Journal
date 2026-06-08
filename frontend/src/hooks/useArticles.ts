@@ -23,6 +23,7 @@ export function useArticles(params: {
   search?: string;
   category?: string;
   tag?: string;
+  sort?: string;
 }) {
   return useQuery({
     queryKey: articleKeys.list(params),

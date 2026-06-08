@@ -7,6 +7,7 @@ import { Mail, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
 import AuthCard from "../_components/AuthCard";
 import { authApi } from "@/lib/api";
 import Link from "next/link";
+import { useAuthStore } from "@/store/authStore";
 
 export default function VerifyOTPPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function VerifyOTPPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [shake, setShake] = useState(false);
+  const { login } = useAuthStore();
 
   // Resend state
   const [resending, setResending] = useState(false);
@@ -96,10 +98,7 @@ export default function VerifyOTPPage() {
       const data = await authApi.verifyOTP(email, code);
 
       if (data.token) {
-        localStorage.setItem("token", data.token);
-        if (data.user) {
-          localStorage.setItem("user", JSON.stringify(data.user));
-        }
+        login(data.user || null, data.token);
       }
 
       setSuccess(true);

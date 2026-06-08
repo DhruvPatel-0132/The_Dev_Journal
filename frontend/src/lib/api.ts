@@ -1,3 +1,5 @@
+import Cookies from "js-cookie";
+
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:5000/api";
@@ -224,13 +226,14 @@ export const articleApi = {
     return result;
   },
 
-  getAllArticles: async (params?: { page?: number; limit?: number; search?: string; category?: string; tag?: string }) => {
+  getAllArticles: async (params?: { page?: number; limit?: number; search?: string; category?: string; tag?: string; sort?: string }) => {
     const query = new URLSearchParams();
     if (params?.page) query.set("page", String(params.page));
     if (params?.limit) query.set("limit", String(params.limit));
     if (params?.search) query.set("search", params.search);
     if (params?.category) query.set("category", params.category);
     if (params?.tag) query.set("tag", params.tag);
+    if (params?.sort) query.set("sort", params.sort);
 
     const res = await fetch(`${API_URL}/articles?${query.toString()}`, {
       // no credentials needed since feed can be public
@@ -336,7 +339,7 @@ export const uploadApi = {
 };
 
 export const verifyAndRefreshToken = async () => {
-  let token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  let token = typeof window !== "undefined" ? Cookies.get("token") : null;
   if (!token || token === "undefined" || token === "null") return null;
 
   token = token.replace(/^"|"$/g, '');
@@ -351,7 +354,7 @@ export const verifyAndRefreshToken = async () => {
       // Token expired, refresh it
       const data = await authApi.refresh();
       if (data.token) {
-        localStorage.setItem("token", data.token);
+        Cookies.set("token", data.token, { expires: 7, secure: true });
         return data.token;
       }
       return null;
