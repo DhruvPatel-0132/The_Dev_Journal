@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   PenSquare,
@@ -96,6 +96,41 @@ function ConfirmModal({
   onClose: () => void;
 }) {
   const isDelete = modal.action === "delete";
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!modal.open) return;
+    const focusableElements = modalRef.current?.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (!focusableElements || focusableElements.length === 0) return;
+
+    const firstElement = focusableElements[0] as HTMLElement;
+    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+    setTimeout(() => firstElement.focus(), 10);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      } else if (e.key === "Tab") {
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [modal.open, onClose]);
 
   return (
     <AnimatePresence>
@@ -120,7 +155,7 @@ function ConfirmModal({
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#111113] backdrop-blur-xl p-6 shadow-2xl">
+            <div ref={modalRef} className="w-full max-w-md rounded-3xl border border-white/10 bg-[#111113] backdrop-blur-xl p-6 shadow-2xl">
               {/* Header */}
               <div className="flex items-start justify-between mb-5">
                 <div

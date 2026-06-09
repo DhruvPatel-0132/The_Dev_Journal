@@ -151,18 +151,29 @@ export default function ArticleContent({ article, slug }: ArticleContentProps) {
               <div className="flex items-center gap-2">
                 <Heart 
                   onClick={handleLike}
-                  className={`w-5 h-5 cursor-pointer transition-colors ${userAction === 'liked' ? 'text-rose-500 fill-rose-500' : 'hover:text-rose-400'}`} 
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleLike(); } }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={userAction === 'liked' ? 'Unlike article' : 'Like article'}
+                  className={`w-5 h-5 cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded-sm ${userAction === 'liked' ? 'text-rose-500 fill-rose-500' : 'hover:text-rose-400'}`} 
                 />
                 <span className="text-sm">{likeCount}</span>
               </div>
               <div className="flex items-center gap-2">
                 <ThumbsDown 
                   onClick={handleDislike}
-                  className={`w-5 h-5 cursor-pointer transition-colors ${userAction === 'disliked' ? 'text-indigo-400 fill-indigo-400' : 'hover:text-indigo-400'}`} 
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleDislike(); } }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={userAction === 'disliked' ? 'Remove dislike' : 'Dislike article'}
+                  className={`w-5 h-5 cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-sm ${userAction === 'disliked' ? 'text-indigo-400 fill-indigo-400' : 'hover:text-indigo-400'}`} 
                 />
                 <span className="text-sm">{dislikeCount}</span>
               </div>
-              <button className="p-2 hover:bg-white/5 rounded-full transition-colors group">
+              <button 
+                className="p-2 hover:bg-white/5 rounded-full transition-colors group outline-none focus-visible:ring-2 focus-visible:ring-white"
+                aria-label="Share article"
+              >
                 <Share2 className="w-5 h-5 group-hover:text-white" />
               </button>
               <PDFDownloadButton article={article} />

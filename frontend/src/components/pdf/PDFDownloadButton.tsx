@@ -19,7 +19,11 @@ export default function PDFDownloadButton({ article }: PDFDownloadButtonProps) {
 
   if (!isMounted) {
     return (
-      <button className="p-2 hover:bg-white/5 rounded-full transition-colors group" title="Export as PDF">
+      <button 
+        className="p-2 hover:bg-white/5 rounded-full transition-colors group outline-none focus-visible:ring-2 focus-visible:ring-white" 
+        title="Export as PDF"
+        aria-label="Export as PDF"
+      >
         <Download className="w-5 h-5 group-hover:text-white" />
       </button>
     );
@@ -29,8 +33,9 @@ export default function PDFDownloadButton({ article }: PDFDownloadButtonProps) {
     <PDFDownloadLink
       document={<ArticlePDF article={article} />}
       fileName={`${article.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`}
-      className="p-2 hover:bg-white/5 rounded-full transition-colors group flex items-center justify-center"
+      className="p-2 hover:bg-white/5 rounded-full transition-colors group flex items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-white"
       title="Export as PDF"
+      aria-label="Export as PDF"
     >
       {({ blob, url, loading, error }) => (
         <Download className={`w-5 h-5 ${loading ? 'animate-pulse text-indigo-400' : 'group-hover:text-white'}`} />
