@@ -9,6 +9,7 @@ import authRoutes from "./routes/auth.routes";
 import articleRoutes from "./routes/article.routes";
 import uploadRoutes from "./routes/upload.routes";
 import healthRoutes from "./routes/health.routes";
+import profileRoutes from "./routes/profile.routes";
 import { morganStream } from "./utils/logger";
 
 const app = express();
@@ -58,6 +59,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/articles", articleRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/health", healthRoutes);
+app.use("/api/profile", profileRoutes);
 
 /* 404 — only reached when no route above matched */
 app.use((_req, res) => {

@@ -340,6 +340,44 @@ export const uploadApi = {
   },
 };
 
+export const profileApi = {
+  getProfile: async () => {
+    const res = await fetch(`${API_URL}/profile`, {
+      credentials: "include",
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+
+  updateProfile: async (data: { name?: string; avatar?: File }) => {
+    const formData = new FormData();
+    if (data.name) formData.append("name", data.name);
+    if (data.avatar) formData.append("avatar", data.avatar);
+
+    const res = await fetch(`${API_URL}/profile`, {
+      method: "PUT",
+      body: formData,
+      credentials: "include",
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+
+  changePassword: async (data: { currentPassword: string; newPassword: string }) => {
+    const res = await fetch(`${API_URL}/profile/change-password`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  },
+};
+
 export const verifyAndRefreshToken = async () => {
   let token = typeof window !== "undefined" ? Cookies.get("token") : null;
   if (!token) return null;
