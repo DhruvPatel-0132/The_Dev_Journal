@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
 import { getErrorMessage } from "@/lib/utils";
 
-export default function VerifyOTPPage() {
+function VerifyOTPForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
@@ -133,13 +133,12 @@ export default function VerifyOTPPage() {
   };
 
   return (
-    <AuthCard>
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="space-y-6"
-      >
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="space-y-6"
+    >
         {/* Back link */}
         <div className="flex justify-start">
           <Link href="/register" className="text-xs text-zinc-500 hover:text-zinc-300 transition">
@@ -275,7 +274,16 @@ export default function VerifyOTPPage() {
             </div>
           </>
         )}
-      </motion.div>
+    </motion.div>
+  );
+}
+
+export default function VerifyOTPPage() {
+  return (
+    <AuthCard>
+      <Suspense fallback={<div className="text-center text-zinc-500">Loading...</div>}>
+        <VerifyOTPForm />
+      </Suspense>
     </AuthCard>
   );
 }

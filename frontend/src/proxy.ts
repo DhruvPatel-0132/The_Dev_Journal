@@ -67,7 +67,7 @@ function decodeToken(token: string): { valid: boolean; role?: string } {
 }
 
 // ─── Middleware ────────────────────────────────────────────────────────────
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isAuthRoute = AUTH_ROUTES.some((r) => pathname.startsWith(r));
