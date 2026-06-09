@@ -8,6 +8,8 @@ import rateLimit from "express-rate-limit";
 import authRoutes from "./routes/auth.routes";
 import articleRoutes from "./routes/article.routes";
 import uploadRoutes from "./routes/upload.routes";
+import healthRoutes from "./routes/health.routes";
+import { morganStream } from "./utils/logger";
 
 const app = express();
 
@@ -28,7 +30,7 @@ const globalLimiter = rateLimit({
 app.use(globalLimiter);
 
 /* Logging */
-app.use(morgan("dev"));
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev", { stream: morganStream }));
 
 /* CORS */
 app.use(
@@ -55,6 +57,7 @@ app.get("/", (_, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/articles", articleRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/health", healthRoutes);
 
 /* 404 — only reached when no route above matched */
 app.use((_req, res) => {
