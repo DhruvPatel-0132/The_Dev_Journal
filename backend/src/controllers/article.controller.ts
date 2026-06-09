@@ -2,19 +2,10 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { createArticleSchema, updateArticleSchema } from "../validators/article.validator";
 import * as articleService from "../services/article.service";
-import { AppError } from "../utils/AppError";
+import { handleError as genericHandleError } from "../utils/error.util";
 
 const handleError = (res: Response, error: any, defaultMessage: string) => {
-  if (error instanceof z.ZodError) {
-    res.status(400).json({ message: "Validation failed", issues: error.issues });
-    return;
-  }
-  if (error instanceof AppError) {
-    res.status(error.statusCode).json({ success: false, message: error.message });
-    return;
-  }
-  console.error(`[Article Controller Error] ${defaultMessage}:`, error);
-  res.status(500).json({ success: false, message: defaultMessage });
+  genericHandleError(res, error, defaultMessage, 'Article Controller');
 };
 
 // ─── Dashboard Stats ─────────────────────────
