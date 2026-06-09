@@ -2,9 +2,10 @@ import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
 import { Article, Category, DashboardStats, PaginatedResponse, Tag, TokenPayload } from "@/types";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:5000/api";
+const isServer = typeof window === "undefined";
+const API_URL = isServer
+  ? (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api")
+  : "/api";
 
 export const authApi = {
   register: async (data: {
