@@ -12,6 +12,7 @@ import { articleApi } from "@/lib/api";
 import Link from "next/link";
 import Image from "next/image";
 import DOMPurify from "dompurify";
+import PDFDownloadButton from "@/components/pdf/PDFDownloadButton";
 
 interface ArticleContentProps {
   article: Article;
@@ -164,6 +165,7 @@ export default function ArticleContent({ article, slug }: ArticleContentProps) {
               <button className="p-2 hover:bg-white/5 rounded-full transition-colors group">
                 <Share2 className="w-5 h-5 group-hover:text-white" />
               </button>
+              <PDFDownloadButton article={article} />
             </div>
           </motion.div>
         </header>
