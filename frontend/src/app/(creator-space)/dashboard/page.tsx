@@ -64,6 +64,102 @@ interface ModalState {
   article: Article | null;
 }
 
+// ─── Drafts Modal ─────────────────────────────────────────────────────────────
+function DraftsModal({
+  open,
+  onClose,
+  drafts,
+  loading,
+}: {
+  open: boolean;
+  onClose: () => void;
+  drafts: Article[];
+  loading: boolean;
+}) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+          />
+          <motion.div
+            key="dialog"
+            initial={{ opacity: 0, scale: 0.92, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          >
+            <div ref={modalRef} className="w-full max-w-lg rounded-3xl border border-white/10 bg-[#111113] backdrop-blur-xl p-6 shadow-2xl flex flex-col max-h-[80vh]">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <FileText size={20} className="text-violet-400" />
+                  Continue Draft
+                </h2>
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/10 transition"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto pr-2 -mr-2">
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 size={24} className="animate-spin text-white/40" />
+                  </div>
+                ) : drafts.length === 0 ? (
+                  <div className="text-center py-8 text-white/40">
+                    <p>No drafts found.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {drafts.map(draft => (
+                      <Link
+                        key={draft._id}
+                        href={`/edit-blog/${draft.seoSlug}`}
+                        className="p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 transition flex items-center justify-between group"
+                      >
+                        <div className="flex-1 min-w-0 pr-4">
+                          <h3 className="font-medium truncate group-hover:text-violet-300 transition-colors">
+                            {draft.title || "Untitled Draft"}
+                          </h3>
+                          <p className="text-xs text-white/40 mt-1">
+                            Last updated: {new Date(draft.updatedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <ArrowRight size={16} className="text-white/40 group-hover:text-violet-400 group-hover:translate-x-1 transition" />
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function formatCount(num: number): string {
   if (num >= 1_000_000) return (num / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
@@ -247,6 +343,9 @@ export default function DashboardPage() {
   const { data: articlesRes, isLoading: articlesLoading, isError: articlesError, error: aError } = useMyArticles({ limit: 5 });
   const articles: Article[] = articlesRes?.articles || [];
 
+  const { data: draftsRes, isLoading: draftsLoading } = useMyArticles({ limit: 50, status: 'draft' });
+  const draftArticles: Article[] = draftsRes?.articles || [];
+
   const loading = statsLoading || articlesLoading;
   const error = (statsError ? getErrorMessage(sError) : null) || (articlesError ? getErrorMessage(aError) : null);
 
@@ -259,6 +358,7 @@ export default function DashboardPage() {
     action: "delete",
     article: null,
   });
+  const [draftsModalOpen, setDraftsModalOpen] = useState(false);
   const [actionError, setActionError] = useState("");
   const [togglingSlug, setTogglingSlug] = useState<string | null>(null);
 
@@ -315,6 +415,12 @@ export default function DashboardPage() {
 
   return (
     <>
+      <DraftsModal 
+        open={draftsModalOpen} 
+        onClose={() => setDraftsModalOpen(false)} 
+        drafts={draftArticles} 
+        loading={draftsLoading} 
+      />
       <ConfirmModal
         modal={modal}
         loading={deleteMutation.isPending || archiveMutation.isPending}
@@ -411,22 +517,27 @@ export default function DashboardPage() {
           <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-6">Quick Actions</h2>
             <div className="grid md:grid-cols-3 gap-6">
-              {[
-                { label: "Create Article", href: "/create-blog" },
-                { label: "Continue Draft", href: "/dashboard?filter=drafts" },
-              ].map((action) => (
-                <Link key={action.label} href={action.href}>
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    className="group cursor-pointer rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-6"
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">{action.label}</span>
-                      <ArrowRight className="group-hover:translate-x-1 transition" />
-                    </div>
-                  </motion.div>
-                </Link>
-              ))}
+              <Link href="/create-blog">
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  className="group cursor-pointer rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-6"
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Create Article</span>
+                    <ArrowRight className="group-hover:translate-x-1 transition" />
+                  </div>
+                </motion.div>
+              </Link>
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                onClick={() => setDraftsModalOpen(true)}
+                className="group cursor-pointer rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-6"
+              >
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Continue Draft</span>
+                  <ArrowRight className="group-hover:translate-x-1 transition" />
+                </div>
+              </motion.div>
             </div>
           </section>
 
