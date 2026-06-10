@@ -14,7 +14,7 @@ interface SendMailOptions {
   html: string;
 }
 
-const createTransporter = async () => {
+const getOAuth2Client = async () => {
   const oauth2Client = new google.auth.OAuth2(
     process.env.CLIENT_ID,
     process.env.CLIENT_SECRET,
@@ -25,57 +25,45 @@ const createTransporter = async () => {
     refresh_token: process.env.REFRESH_TOKEN,
   });
 
-  const accessTokenResponse = await oauth2Client.getAccessToken();
-  const accessToken = accessTokenResponse?.token;
-
-  if (!accessToken) {
-    throw new Error("Failed to generate Gmail access token.");
-  }
-
-  // Explicitly resolve the IPv4 address for Gmail SMTP to avoid ENETUNREACH on IPv6
-  const { address: smtpIpv4 } = await dns.promises.lookup("smtp.gmail.com", { family: 4 });
-
-  const transporter = nodemailer.createTransport({
-    host: smtpIpv4,
-    port: 587,
-    secure: false,
-    requireTLS: true,
-    tls: {
-      servername: "smtp.gmail.com",
-    },
-
-    auth: {
-      type: "OAuth2",
-      user: process.env.SENDER_EMAIL,
-      clientId: process.env.CLIENT_ID,
-      clientSecret: process.env.CLIENT_SECRET,
-      refreshToken: process.env.REFRESH_TOKEN,
-      accessToken: accessToken,
-    },
-
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
-  });
-
-  await transporter.verify();
-  console.log("SMTP server is ready.");
-
-  return transporter;
+  return oauth2Client;
 };
+
 export const sendMail = async ({ to, subject, html }: SendMailOptions) => {
   try {
-    const mailTransporter = await createTransporter();
-    const info = await mailTransporter.sendMail({
+    const oauth2Client = await getOAuth2Client();
+
+    // Use Nodemailer just to generate the raw MIME message
+    const mailOptions = {
       from: `"${process.env.FROM_NAME || "The Dev Journal"}" <${process.env.FROM_EMAIL || process.env.SENDER_EMAIL}>`,
       to,
       subject,
       html,
+    };
+
+    const MailComposer = require("nodemailer/lib/mail-composer");
+    const mail = new MailComposer(mailOptions);
+    const message = await mail.compile().build();
+    
+    // Encode the message to base64url format
+    const encodedMessage = Buffer.from(message)
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+
+    // Send the email using the Gmail HTTP API directly, bypassing Render's SMTP block
+    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+    const response = await gmail.users.messages.send({
+      userId: "me",
+      requestBody: {
+        raw: encodedMessage,
+      },
     });
-    console.log("Message sent: %s", info.messageId);
-    return info;
+
+    console.log("Message sent via Gmail API: %s", response.data.id);
+    return response.data;
   } catch (error) {
-    console.error("Error sending email: ", error);
+    console.error("Error sending email via Gmail API: ", error);
     throw new Error("Could not send email");
   }
 };
