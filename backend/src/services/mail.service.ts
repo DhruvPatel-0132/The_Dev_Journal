@@ -32,11 +32,17 @@ const createTransporter = async () => {
     throw new Error("Failed to generate Gmail access token.");
   }
 
+  // Explicitly resolve the IPv4 address for Gmail SMTP to avoid ENETUNREACH on IPv6
+  const { address: smtpIpv4 } = await dns.promises.lookup("smtp.gmail.com", { family: 4 });
+
   const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
+    host: smtpIpv4,
     port: 587,
     secure: false,
     requireTLS: true,
+    tls: {
+      servername: "smtp.gmail.com",
+    },
 
     auth: {
       type: "OAuth2",
