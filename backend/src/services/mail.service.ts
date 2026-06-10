@@ -25,27 +25,38 @@ const createTransporter = async () => {
     refresh_token: process.env.REFRESH_TOKEN,
   });
 
-  // Always fetch a fresh access token so it never goes stale
-  const accessTokenObj = await oauth2Client.getAccessToken();
-  const accessToken = accessTokenObj?.token;
+  const accessTokenResponse = await oauth2Client.getAccessToken();
+  const accessToken = accessTokenResponse?.token;
 
   if (!accessToken) {
-    throw new Error("Failed to obtain OAuth2 access token for email service");
+    throw new Error("Failed to generate Gmail access token.");
   }
 
-  return nodemailer.createTransport({
-    service: "gmail",
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    requireTLS: true,
+
     auth: {
       type: "OAuth2",
       user: process.env.SENDER_EMAIL,
       clientId: process.env.CLIENT_ID,
       clientSecret: process.env.CLIENT_SECRET,
       refreshToken: process.env.REFRESH_TOKEN,
-      accessToken,
+      accessToken: accessToken,
     },
-  });
-};
 
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
+  });
+
+  await transporter.verify();
+  console.log("SMTP server is ready.");
+
+  return transporter;
+};
 export const sendMail = async ({ to, subject, html }: SendMailOptions) => {
   try {
     const mailTransporter = await createTransporter();
