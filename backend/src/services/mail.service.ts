@@ -1,6 +1,10 @@
 import nodemailer from "nodemailer";
 import { google } from "googleapis";
 import dotenv from "dotenv";
+import dns from "dns";
+
+// Force Node.js to prefer IPv4 over IPv6 to fix ENETUNREACH errors on environments like Render
+dns.setDefaultResultOrder("ipv4first");
 
 dotenv.config();
 
